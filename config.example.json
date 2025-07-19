@@ -1,0 +1,9 @@
+{
+    "debug": true,
+    "version": "1.0.0",
+    "homepageUrl": "https://movietimecode.mrgarest.com",
+    "baseUrl": "http://localhost",
+    "hostPermissions": {
+        "caesura": []
+    }
+}

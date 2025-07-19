@@ -1,0 +1,85 @@
+import { TMovieSearch, TMovieSearchItem } from "@/types/movie";
+import { useEffect, useState } from "preact/hooks";
+import config from "config";
+import { fetchSearchMovie } from "@/utils/fetch";
+
+type RootProps = {
+    title: string;
+    year?: number | null;
+    onSelected: (item: TMovieSearchItem) => void;
+    onError: (msg: string) => void;
+    onLoading: (b: boolean) => void;
+};
+
+export default function SearchMovie({ title, year = null, onSelected, onError, onLoading }: RootProps) {
+    const locales = chrome.i18n;
+    const [isLoading, setIsLoading] = useState<boolean>(false);
+    const [movies, setMovies] = useState<TMovieSearchItem[]>([]);
+
+    /**
+     * Searches for movies by query and year.
+     * @param query - search query
+     * @param year - movie year
+     */
+    const searchMovie = async (query: string, year: number | null) => {
+        if (isLoading) return;
+        setIsLoading(true);
+        try {
+            const response: TMovieSearch = await fetchSearchMovie(query, 1, year);
+
+            if (response.success) {
+                if (response.items !== null && response.items.length > 0) {
+                    if (response.items.length === 1) {
+                        onSelected(response.items[0]);
+                        return;
+                    }
+                    setMovies(prev => [...prev, ...response.items || []]);
+                    setIsLoading(false);
+                    return;
+                } else onError(locales.getMessage("filmNotFound"));
+            } else onError(locales.getMessage("unknownErrorHasOccurred"));
+        } catch (e) {
+            if (config.debug) {
+                console.error(e);
+            }
+            onError(locales.getMessage("unknownErrorHasOccurred"));
+        }
+
+        setIsLoading(false);
+    };
+
+    // Runs searchMovie on mount and when title changes.
+    useEffect(() => {
+        const init = async () => {
+            onLoading(true);
+            await searchMovie(title, year);
+            onLoading(false);
+        };
+        setMovies([]);
+        init();
+    }, [title]);
+
+    return (
+        <>
+            <div className="mt-dialog-title">{locales.getMessage("movieCheck")}</div>
+            <div className={`mt-search-list mt-scrollbar` + (isLoading ? " mt-hidden" : "")}>
+                {movies.map((item, index) => <div
+                    key={index}
+                    onClick={() => onSelected(item)}
+                    className="mt-movie-item">
+                    <img
+                        className="mt-poster"
+                        src={item.poster_url || chrome.runtime.getURL("images/not_found_poster.webp")} />
+                    <div className="mt-info">
+                        <div>
+                            <span className="mt-title">{item.title ? item.title : item.original_title}</span>
+                            &#32;
+                            <span className="mt-year">({item.release_year})</span>
+                        </div>
+                        {item.title != null && <h2 className="mt-sub-title">{item.original_title}</h2>}
+                    </div>
+                </div>)}
+            </div>
+        </>
+    )
+};
