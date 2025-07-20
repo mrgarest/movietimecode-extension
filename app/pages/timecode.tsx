@@ -1,6 +1,6 @@
 import { useLocation } from "react-router-dom";
 import NotFound from "./not-found";
-import config from "../../config.json";
+import config from "config";
 import { TUser } from "@/types/user";
 import { useEffect, useState } from "react";
 import { Button } from "@/app/components/ui/button";
@@ -11,6 +11,7 @@ import { ExtensionDetails } from "@/app/components/extension-details";
 import { getUser } from "@/utils/auth";
 import TimecodeEditor from "@/app/components/timecode/timecode-editor";
 import SearchMovie from "@/app/components/timecode/search-movie";
+import i18n from "@/lib/i18n";
 
 export default function TimecodePage() {
     const [isLoading, setLoading] = useState<boolean>(true);
@@ -76,9 +77,9 @@ export default function TimecodePage() {
         <>
             <div className={cn("max-w-[40rem] mx-auto w-full pt-8 gap-8 min-h-screen space-y-8", isHideContent && 'hidden')}>
                 {step == 0 && <div className="space-y-4 text-center">
-                    <div className="text-2xl text-foreground font-bold">Потрібна авторизація</div>
-                    <div className="text-base text-foreground">Щоб додати нові таймкоди, вам потрібно увійти у свій обліковий запис Twitch.</div>
-                    <Button onClick={() => logIn()}>Увійти</Button>
+                    <div className="text-2xl text-foreground font-bold">{i18n.t("authorizationRequired")}</div>
+                    <div className="text-base text-foreground">{i18n.t("authorizationRequiredDescription")}</div>
+                    <Button onClick={() => logIn()}>{i18n.t("logIn")}</Button>
                 </div>
                 }
                 {step == 1 && <SearchMovie

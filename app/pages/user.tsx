@@ -3,7 +3,8 @@ import { logIn } from "@/utils/navigation";
 import { useEffect, useRef, useState } from "react";
 import { TUser } from "types/user";
 import { getUser, logOut } from "@/utils/auth";
-import config from "../../config.json";
+import config from "config";
+import i18n from "@/lib/i18n";
 
 export default function User() {
     const [user, setUser] = useState<TUser | null>(null);
@@ -61,17 +62,24 @@ export default function User() {
 
     return (
         <div className="space-y-8">
-            <h1 className="text-h1">Користувач</h1>
+            <h1 className="text-h1">{i18n.t('user')}</h1>
             {user == null ? <div className="space-y-4">
-                <p className="description">Для доступу до певних функцій розширення необхідно пройти авторизацію через Twitch. Детальніше про те, які дані будуть використані, можна дізнатися в <a href="https://movietimecode.mrgarest.com/privacy" target="_blank" rel="noopener noreferrer" className="text-link">Політиці конфіденційності</a>.</p>
-                <div><Button onClick={handleLogIn}>Увійти через Twitch</Button></div>
+                <p className="description" dangerouslySetInnerHTML={{
+                    __html: i18n.t("authorizationDescription", {
+                        url: "https://movietimecode.mrgarest.com/privacy",
+                        interpolation: {
+                            escapeValue: false,
+                        },
+                    })
+                }} />
+                <div><Button onClick={handleLogIn}>{i18n.t("logInTwitch")}</Button></div>
             </div>
                 : <div className="flex items-center justify-between gap-3">
                     <div className="flex items-center gap-3">
                         <img className="bg-primary/10 size-12 flex items-center justify-center rounded-full" src="/images/avatar.png" />
                         <div className="text-xl text-foreground font-bold">{user.username}</div>
                     </div>
-                    <Button variant="destructive" onClick={handleLogOut}>Вийти</Button>
+                    <Button variant="destructive" onClick={handleLogOut}>{i18n.t("logOut")}</Button>
                 </div>}
         </div>
     );

@@ -3,22 +3,23 @@ import { useState } from "react";
 import { cn } from "@/lib/utils";
 import { Aperture, Settings, User } from "lucide-react";
 import { ExtensionDetails } from "./extension-details";
+import i18n from "@/lib/i18n";
 
 const navItems = [
     {
         ico: Settings,
         to: '/settings',
-        text: "Налаштування",
+        text: i18n.t('settings')
     },
     {
         ico: Aperture,
         to: '/settings/obs-control',
-        text: "Управління OBS",
+        text: i18n.t('obsManagement')
     },
     {
         ico: User,
         to: '/user',
-        text: "Користувач",
+        text: i18n.t('user')
     }
 ]
 

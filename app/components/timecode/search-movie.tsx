@@ -3,6 +3,7 @@ import config from "config";
 import { useEffect, useState } from "react";
 import { TMovieSearch, TMovieSearchItem } from "@/types/movie";
 import { logOut } from "@/utils/auth";
+import i18n from "@/lib/i18n";
 
 type RootProps = {
     query: string;
@@ -44,19 +45,19 @@ export default function SearchMovie({ query, year = null, onSelected, onMessage,
                     setIsLoading(false);
                     return;
                 } else if (page === 1) {
-                    onMessage("Фільм не знайдено 😢")
+                    onMessage(i18n.t('filmNotFound'))
                 }
             } else switch (response.error?.code) {
                 case 'ACCESS_TOKEN_INVALID':
                 case 'USER_NOT_FOUND':
                     await logOut();
-                    onMessage("Помилка доступу. Спробуйте ще раз");
+                    onMessage(i18n.t("accessErrorPleaseTryAgain"));
                     break;
                 case 'USER_DEACTIVATED':
-                    onMessage("Користувач деактивований");
+                    onMessage(i18n.t("userDeactivated"));
                     break;
                 default:
-                    onMessage("Сталася невідома помилка");
+                    onMessage(i18n.t("unknownError"));
             }
         } catch (e) {
             if (config.debug) {
@@ -102,7 +103,7 @@ export default function SearchMovie({ query, year = null, onSelected, onMessage,
 
     return (
         <>
-            <h1 className="text-2xl text-foreground font-bold">Виберіть фільм</h1>
+            <h1 className="text-2xl text-foreground font-bold">{i18n.t("selectMovie")}</h1>
             <div className="space-y-1">
                 {movies.map((item, index) => <div
                     key={index}

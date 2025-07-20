@@ -2,6 +2,7 @@ import { TMovieSearch, TMovieSearchItem } from "@/types/movie";
 import { useEffect, useState } from "preact/hooks";
 import config from "config";
 import { fetchSearchMovie } from "@/utils/fetch";
+import i18n from "@/lib/i18n";
 
 type RootProps = {
     title: string;
@@ -12,7 +13,6 @@ type RootProps = {
 };
 
 export default function SearchMovie({ title, year = null, onSelected, onError, onLoading }: RootProps) {
-    const locales = chrome.i18n;
     const [isLoading, setIsLoading] = useState<boolean>(false);
     const [movies, setMovies] = useState<TMovieSearchItem[]>([]);
 
@@ -36,13 +36,13 @@ export default function SearchMovie({ title, year = null, onSelected, onError, o
                     setMovies(prev => [...prev, ...response.items || []]);
                     setIsLoading(false);
                     return;
-                } else onError(locales.getMessage("filmNotFound"));
-            } else onError(locales.getMessage("unknownErrorHasOccurred"));
+                } else onError(i18n.t("filmNotFound"));
+            } else onError(i18n.t("unknownError"));
         } catch (e) {
             if (config.debug) {
                 console.error(e);
             }
-            onError(locales.getMessage("unknownErrorHasOccurred"));
+            onError(i18n.t("unknownError"));
         }
 
         setIsLoading(false);
@@ -61,7 +61,7 @@ export default function SearchMovie({ title, year = null, onSelected, onError, o
 
     return (
         <>
-            <div className="mt-dialog-title">{locales.getMessage("movieCheck")}</div>
+            <div className="mt-dialog-title">{i18n.t("movieCheck")}</div>
             <div className={`mt-search-list mt-scrollbar` + (isLoading ? " mt-hidden" : "")}>
                 {movies.map((item, index) => <div
                     key={index}

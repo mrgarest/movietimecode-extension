@@ -5,6 +5,7 @@ import { TMovieSearchItem } from "@/types/movie";
 import { X } from "lucide-react";
 import { renderQuestionDialog } from "../question-dialog";
 import MovieCheck from "./check";
+import i18n from "@/lib/i18n";
 
 type RootProps = {
     title: string;
@@ -12,7 +13,6 @@ type RootProps = {
 };
 
 const MovieCheckDialog = ({ title, year = null }: RootProps) => {
-    const locales = chrome.i18n;
     const [isLoading, setLoading] = useState<boolean>(false);
     const [step, setStep] = useState<number>(0);
     const [movie, setMovie] = useState<TMovieSearchItem | null>(null);
@@ -35,11 +35,11 @@ const MovieCheckDialog = ({ title, year = null }: RootProps) => {
         setStep(-1);
         dismissMovieCheckDialog();
         renderQuestionDialog({
-            title: locales.getMessage("movieCheck"),
+            title: i18n.t("movieCheck"),
             description: msg,
             buttons: [
                 {
-                    text: locales.getMessage("close"),
+                    text: i18n.t("close"),
                     style: "primary",
                 }
             ]

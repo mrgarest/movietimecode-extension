@@ -5,6 +5,7 @@ import { fetchBackground } from "@/utils/fetch";
 import { format, parseISO } from 'date-fns';
 import { uk } from 'date-fns/locale';
 import { ImdbContentRatingId } from "@/enums/imdb";
+import i18n from "@/lib/i18n";
 
 type RootProps = {
     movie: TMovieSearchItem;
@@ -13,7 +14,6 @@ type RootProps = {
 };
 
 export default function MovieCheck({ movie, onLoading, onError }: RootProps) {
-    const locales = chrome.i18n;
     const [isLoading, setIsLoading] = useState<boolean>(false);
     const [movieCheck, setMovieCheck] = useState<TMovieCheck | undefined>(undefined);
 
@@ -31,12 +31,12 @@ export default function MovieCheck({ movie, onLoading, onError }: RootProps) {
             else if (movie.tmdb_id !== null) url.searchParams.set("tmdb_id", String(movie.tmdb_id));
 
             const response: TMovieCheck = await fetchBackground(url.toString()) as TMovieCheck;
-            response.success ? setMovieCheck(response) : onError(locales.getMessage("checkFailed"));
+            response.success ? setMovieCheck(response) : onError(i18n.t("checkFailed"));
         } catch (e) {
             if (config.debug) {
                 console.error(e);
             }
-            onError(locales.getMessage("unknownErrorHasOccurred"));
+            onError(i18n.t("unknownError"));
         }
 
         setIsLoading(false);
@@ -63,15 +63,15 @@ export default function MovieCheck({ movie, onLoading, onError }: RootProps) {
             </div>
             <div className="mt-check mt-scrollbar">
                 <div className="mt-info-grid">
-                    <div>{locales.getMessage("releaseDate")}</div>
+                    <div>{i18n.t("releaseDate")}</div>
                     <div {...(movieCheck.release?.hazard == true ? { style: { color: "var(--mt-destructive)" } } : {})}>
                         {movieCheck.release ?
                             format(parseISO(movieCheck.release.release_date), 'd MMMM yyyy', { locale: uk })
                             : 'N/A'
                         }
                     </div>
-                    <MovieCompany text={locales.getMessage("production")} companies={movieCheck.productions} />
-                    <MovieCompany text={locales.getMessage("distributors")} companies={movieCheck.distributors} />
+                    <MovieCompany text={i18n.t("production")} companies={movieCheck.productions} />
+                    <MovieCompany text={i18n.t("distributors")} companies={movieCheck.distributors} />
                 </div>
                 {movieCheck.imdb?.content_ratings && <div className="mt-border-t">
                     <div className="mt-info-title">Рейтинг контенту IMDB</div>
@@ -194,7 +194,6 @@ const ContentRating = ({
             return <></>;
     }
 
-    const locales = chrome.i18n;
     let url: string | undefined = isLink ? `https://www.imdb.com/title/${id}/parentalguide/#${hash}` : undefined;
     let color: string | undefined = undefined;
     let level: string | undefined;
@@ -226,14 +225,14 @@ const ContentRating = ({
 
     return (
         <>
-            <div>{locales.getMessage(title)}</div>
+            <div>{i18n.t(title)}</div>
             <div {...(level && !url && color ? style : {})}>
                 {!level && <>N/A</>}
-                {level && !url && locales.getMessage(level)}
+                {level && !url && i18n.t(level)}
                 {level && url && <a href={url}
                     target="_blank"
                     rel="noopener noreferrer"
-                    {...(color ? style : {})}>{locales.getMessage(level)}</a>}
+                    {...(color ? style : {})}>{i18n.t(level)}</a>}
             </div>
         </>
     );

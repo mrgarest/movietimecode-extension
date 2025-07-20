@@ -10,6 +10,7 @@ import { TUser } from "@/types/user";
 import { goToTab, logIn } from "@/utils/navigation";
 import { getUser } from "@/utils/auth";
 import { renderMovieCheckDialog } from "./movie-check/dialog";
+import i18n from "@/lib/i18n";
 
 type RootProps = {
     player: HTMLIFrameElement;
@@ -24,8 +25,6 @@ type MovieProps = {
 };
 
 export const ControlBar = ({ player, movie, onTurnOffCensorship, onCensorship }: RootProps) => {
-    const locales = chrome.i18n;
-
     type TLucideIcon = React.ForwardRefExoticComponent<Omit<LucideProps, "ref"> & React.RefAttributes<SVGSVGElement>>;
 
     const [isSearchButtonDisabled, setSearchButtonDisabled] = useState<boolean>(false);
@@ -37,7 +36,7 @@ export const ControlBar = ({ player, movie, onTurnOffCensorship, onCensorship }:
         icon: TLucideIcon
     }>({
         action: ESearchButtonAction.searchTimecode,
-        title: locales.getMessage('searchTimecode'),
+        title: i18n.t('searchTimecode'),
         icon: Search
     });
 
@@ -79,16 +78,16 @@ export const ControlBar = ({ player, movie, onTurnOffCensorship, onCensorship }:
                 onSelected: handleGetTimecodeSegments
             }); else if (data?.error?.code == 404) {
                 renderQuestionDialog({
-                    title: locales.getMessage("notFound"),
-                    description: locales.getMessage("notFoundTimecodeDescription"),
+                    title: i18n.t("notFound"),
+                    description: i18n.t("notFoundTimecodeDescription"),
                     buttons: [
                         {
-                            text: locales.getMessage("addTimecodes"),
+                            text: i18n.t("addTimecodes"),
                             style: "outline",
                             onClick: handleTimecodeEditor
                         },
                         {
-                            text: locales.getMessage("close"),
+                            text: i18n.t("close"),
                             style: "primary",
                         }
                     ]
@@ -179,7 +178,7 @@ export const ControlBar = ({ player, movie, onTurnOffCensorship, onCensorship }:
         }
         setSearchButton({
             action: action,
-            title: locales.getMessage(textKey),
+            title: i18n.t(textKey),
             icon: icon
         })
     }
@@ -221,15 +220,15 @@ export const ControlBar = ({ player, movie, onTurnOffCensorship, onCensorship }:
             return;
         }
         renderQuestionDialog({
-            title: locales.getMessage("authorizationRequired"),
-            description: locales.getMessage("authorizationRequiredDescription"),
+            title: i18n.t("authorizationRequired"),
+            description: i18n.t("authorizationRequiredDescription"),
             buttons: [
                 {
-                    text: locales.getMessage("close"),
+                    text: i18n.t("close"),
                     style: "outline",
                 },
                 {
-                    text: locales.getMessage("logIn"),
+                    text: i18n.t("logIn"),
                     style: "primary",
                     onClick: () => logIn()
                 }
@@ -257,19 +256,19 @@ export const ControlBar = ({ player, movie, onTurnOffCensorship, onCensorship }:
                     <span>{searchButton.title}</span>
                 </div>
                 <div
-                    data-mt-tooltip={locales.getMessage("movieCheck")}
+                    data-mt-tooltip={i18n.t("movieCheck")}
                     className="mt-button mt-icon"
                     onClick={handleMovieCheck}>
                     <CopyCheck size={iconSize} />
                 </div>
                 <div
-                    data-mt-tooltip={locales.getMessage("addTimecodes")}
+                    data-mt-tooltip={i18n.t("addTimecodes")}
                     className="mt-button mt-icon"
                     onClick={handleTimecodeEditor}>
                     <BadgePlus size={iconSize} />
                 </div>
                 <div
-                    data-mt-tooltip={locales.getMessage("settings")}
+                    data-mt-tooltip={i18n.t("settings")}
                     className="mt-button mt-icon"
                     onClick={() => goToTab({ to: "/settings" })}>
                     <Settings size={iconSize} />

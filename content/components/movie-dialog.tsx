@@ -4,6 +4,7 @@ import { useState } from 'preact/hooks';
 import { Circle, CircleCheck } from "lucide-react";
 import { removeDialog, renderDialog } from "@/utils/dialog";
 import { secondsToTime } from "@/utils/format";
+import i18n from "@/lib/i18n";
 
 type RootProps = {
     data: TTimecodeSearch;
@@ -12,7 +13,6 @@ type RootProps = {
 
 
 const MovieDialog = ({ data, onSelected }: RootProps) => {
-    const locales = chrome.i18n;
     const [selectedIndex, setSelectedIndex] = useState<number>(0);
     const [timecode, setTimecode] = useState<TTimecode | null>(data.timecodes?.[selectedIndex] || null);
 
@@ -73,11 +73,11 @@ const MovieDialog = ({ data, onSelected }: RootProps) => {
                 <div className="mt-buttons">
                     <Button
                         style="outline"
-                        text={locales.getMessage("cancel")}
+                        text={i18n.t("cancel")}
                         onClick={remove}
                     />
                     <Button
-                        text={locales.getMessage("apply")}
+                        text={i18n.t("apply")}
                         onClick={handleApply}
                     />
                 </div>

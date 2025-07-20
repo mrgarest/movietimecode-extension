@@ -1,10 +1,17 @@
-import { AliasOptions, defineConfig, PluginOption, UserConfig } from "vite";
+import {
+  AliasOptions,
+  defineConfig,
+  Plugin,
+  PluginOption,
+  UserConfig,
+} from "vite";
 import react from "@vitejs/plugin-react";
 import tailwindcss from "@tailwindcss/vite";
 import path from "path";
 import getManifest from "./manifest.config";
 import { viteStaticCopy } from "vite-plugin-static-copy";
 import config from "./config.json";
+import fs from "fs";
 
 const banner: string = `/**
  * Movie Timecode Browser Extension
@@ -34,10 +41,6 @@ export default defineConfig({
           src: "assets/*",
           dest: "",
         },
-        {
-          src: "locales/*",
-          dest: "_locales",
-        },
       ],
     }),
     {
@@ -53,6 +56,7 @@ export default defineConfig({
         });
       },
     },
+    CustomLocalesPlugin(),
   ],
   resolve: {
     alias: alias,
@@ -90,3 +94,56 @@ export const buildDefineConfig = (options: TBuildDefineConfig): UserConfig => {
     },
   };
 };
+
+function CustomLocalesPlugin(): Plugin {
+  let viteOutDir: string;
+
+  return {
+    name: "vite:custom-locales",
+    apply: "build",
+
+    configResolved(config) {
+      viteOutDir = config.build.outDir;
+    },
+
+    async closeBundle() {
+      const inputDir = path.resolve(__dirname, "./locales");
+      const outputDir = path.resolve(process.cwd(), viteOutDir, "_locales");
+
+      if (!fs.existsSync(inputDir)) return;
+
+      const localeDirs = fs
+        .readdirSync(inputDir)
+        .filter((f) => fs.statSync(path.join(inputDir, f)).isDirectory());
+
+      for (const langCode of localeDirs) {
+        const translationFile = path.join(
+          inputDir,
+          langCode,
+          "translation.json"
+        );
+        if (!fs.existsSync(translationFile)) continue;
+
+        const translation: Record<string, string> = JSON.parse(
+          fs.readFileSync(translationFile, "utf-8")
+        );
+
+        const langOutputDir = path.join(outputDir, langCode);
+        fs.mkdirSync(langOutputDir, { recursive: true });
+
+        fs.writeFileSync(
+          path.join(langOutputDir, "messages.json"),
+          JSON.stringify(
+            {
+              appName: { message: translation.appName },
+              appDesc: { message: translation.appDesc },
+            },
+            null,
+            2
+          ),
+          "utf-8"
+        );
+      }
+    },
+  };
+}

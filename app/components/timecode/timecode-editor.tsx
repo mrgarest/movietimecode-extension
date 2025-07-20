@@ -1,5 +1,5 @@
-import { fetchBackground } from "../../../utils/fetch";
-import config from "../../../config.json";
+import { fetchBackground } from "@/utils/fetch";
+import config from "config";
 import { useEffect, useState } from "react";
 import { Button } from "@/app/components/ui/button";
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/app/components/ui/form";
@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { CirclePlus, Trash2 } from "lucide-react";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/app/components/ui/alert-dialog";
 import { z } from "zod"
-import { TimecodeTag } from "../../../enums/timecode";
+import { TimecodeTag } from "@/enums/timecode";
 import { useFieldArray, useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import toast from "react-hot-toast";
@@ -16,11 +16,12 @@ import { CheckedState } from "@radix-ui/react-checkbox";
 import { Label } from "@/app/components/ui/label";
 import { cn } from "@/lib/utils";
 import { Textarea } from "@/app/components/ui/textarea";
-import { secondsToTimeHMS, timeToseconds } from "../../../utils/format";
-import { TSegment } from "../../../types/timecode";
-import { TMovieSearchItem } from "../../../types/movie";
-import { TResponse } from "../../../types/response";
-import { logOut } from "../../../utils/auth";
+import { secondsToTimeHMS, timeToseconds } from "@/utils/format";
+import { TSegment } from "@/types/timecode";
+import { TMovieSearchItem } from "@/types/movie";
+import { TResponse } from "@/types/response";
+import { logOut } from "@/utils/auth";
+import i18n from "@/lib/i18n";
 
 /**
  * Form validation scheme
@@ -46,10 +47,10 @@ const formSchema = z.object({
                 seconds: z.string().min(1).max(2)
             }),
             tag_id: z.string().min(1, {
-                message: 'Виберіть тег вмісту.'
+                message: i18n.t("selectContentTag")
             }),
             description: z.string().max(200, {
-                message: 'Максимальна довжина тексту не повинна перевищувати 200 символів.'
+                message: i18n.t("maximumLengthTimecodeDescription")
             }),
         })
     ),
@@ -99,7 +100,7 @@ export default function TimecodeEditor({ movie, onMessage, onLoading }: RootProp
     }[] = [
             {
                 value: String(TimecodeTag.NUDITY),
-                title: 'Оголеність'
+                title: i18n.t("nudity")
             }
         ];
 
@@ -127,10 +128,10 @@ export default function TimecodeEditor({ movie, onMessage, onLoading }: RootProp
                     case 'ACCESS_TOKEN_INVALID':
                     case 'USER_NOT_FOUND':
                         await logOut();
-                        onMessage("Помилка доступу. Спробуйте ще раз");
+                        onMessage(i18n.t("accessErrorPleaseTryAgain"));
                         break;
                     case 'USER_DEACTIVATED':
-                        onMessage("Користувач деактивований");
+                        onMessage(i18n.t("userDeactivated"));
                         break;
                 }
 
@@ -142,10 +143,10 @@ export default function TimecodeEditor({ movie, onMessage, onLoading }: RootProp
             onLoading(false);
         }
         if (!success) {
-            toast.error('Не вдалося видалити таймкоди!');
+            toast.error(i18n.t("unableToDeleteTimecode"));
             return;
         }
-        onMessage('Таймкод було видалено');
+        onMessage(i18n.t("timecodeHasBeenDeleted"));
     };
 
     /**
@@ -163,7 +164,7 @@ export default function TimecodeEditor({ movie, onMessage, onLoading }: RootProp
             isDurationError = isError = true;
             form.setError('duration', {
                 type: "manual",
-                message: "Тривалість фільму занадто коротка.",
+                message: i18n.t("movieDurationIsTooShort"),
             });
             return;
         }
@@ -192,14 +193,14 @@ export default function TimecodeEditor({ movie, onMessage, onLoading }: RootProp
                     isError = true;
                     form.setError(`segments.${index}.start_time`, {
                         type: "manual",
-                        message: "Час завершення має бути більшим, ніж час початку.",
+                        message: i18n.t("endTimeStartTimeError"),
                     });
                 }
                 if (endsecondss > duration && !isDurationError) {
                     isDurationError = isError = true;
                     form.setError('duration', {
                         type: "manual",
-                        message: "Тривалість фільму не може бути більшою за таймкоди.",
+                        message: i18n.t("durationMovieCannotExceedTimecodes"),
                     });
                 }
 
@@ -221,7 +222,7 @@ export default function TimecodeEditor({ movie, onMessage, onLoading }: RootProp
                         isError = true;
                         form.setError(`segments.${index}.start_time`, {
                             type: "manual",
-                            message: `Час збігається з таймкодом #${i + 1}.`,
+                            message: i18n.t("timeCoincidesWithTimecodeIndex", { index: i + 1 }),
                         });
                         break;
                     }
@@ -255,10 +256,10 @@ export default function TimecodeEditor({ movie, onMessage, onLoading }: RootProp
                 case 'ACCESS_TOKEN_INVALID':
                 case 'USER_NOT_FOUND':
                     await logOut();
-                    onMessage("Помилка доступу. Спробуйте ще раз");
+                    onMessage(i18n.t("accessErrorPleaseTryAgain"));
                     break;
                 case 'USER_DEACTIVATED':
-                    onMessage("Користувач деактивований");
+                    onMessage(i18n.t("userDeactivated"));
                     break;
             }
 
@@ -270,10 +271,10 @@ export default function TimecodeEditor({ movie, onMessage, onLoading }: RootProp
         onLoading(false);
 
         if (!success) {
-            toast.error("Не вдалося додати таймкод!");
+            toast.error(i18n.t("unableAddTimecode"));
             return;
         }
-        onMessage(timecodeId ? "Таймкод було відредаговано" : "Таймкод було додано");
+        onMessage(i18n.t(timecodeId ? "timecodeHasEdited" : "timecodeAdded"));
     };
 
     /**
@@ -398,8 +399,8 @@ export default function TimecodeEditor({ movie, onMessage, onLoading }: RootProp
                     <div className="flex items-start gap-4 rounded-md">
                         {timeField(`duration`, form.control)}
                         <div className="space-y-1 leading-none">
-                            <Label>Тривалість фільму</Label>
-                            <FormDescription>Тривалість фільму може відрізнятися в різних потокових сервісах, тому вам потрібно вказати тривалість фільму, щоб користувачі розуміли, чи збігаються таймкоди.</FormDescription>
+                            <Label>{i18n.t("movieDuration")}</Label>
+                            <FormDescription>{i18n.t("movieDurationDescription")}</FormDescription>
                         </div>
                     </div>
                     {form.formState.errors.duration && <FormMessage>{form.formState.errors.duration.message}</FormMessage>}
@@ -412,8 +413,8 @@ export default function TimecodeEditor({ movie, onMessage, onLoading }: RootProp
                         checked={noTimecodes}
                         onCheckedChange={(checked) => handleNoTimecodes(checked)} />
                     <div className="space-y-1 leading-none">
-                        <Label htmlFor="noTimecodes" className="cursor-pointer">Таймкодів не було виявлено</Label>
-                        <div className="text-muted-foreground text-sm">Ви підтверджуєте, що фільм було перевірено і ніяких таймкодів не було виявлено.</div>
+                        <Label htmlFor="noTimecodes" className="cursor-pointer">{i18n.t("noTimecodesFound")}</Label>
+                        <div className="text-muted-foreground text-sm">{i18n.t("noTimecodesFoundDescription")}</div>
                     </div>
                 </div>
                 {!noTimecodes && (<>
@@ -421,7 +422,7 @@ export default function TimecodeEditor({ movie, onMessage, onLoading }: RootProp
                     {segmentFields.map((field, index) => (
                         <div key={field.id} className="space-y-6">
                             <div className="space-y-3">
-                                <FormLabel htmlFor={`segments.${index}`}>Таймкод #{index + 1}</FormLabel>
+                                <FormLabel htmlFor={`segments.${index}`}>{i18n.t("timecodeIndex", { index: index + 1 })}</FormLabel>
                                 <div className="space-y-2">
                                     <div className={cn('grid grid-rows-2 sm:grid-rows-1 items-start gap-2', segmentFields.length > 1 ? 'grid-cols-[1fr_auto] sm:grid-cols-[auto_1fr_auto]' : ' grid-cols-1 sm:grid-cols-[auto_1fr]')}>
                                         <div className="flex items-center gap-2 mr-2 order-1">
@@ -439,7 +440,7 @@ export default function TimecodeEditor({ movie, onMessage, onLoading }: RootProp
                                                     defaultValue={field.value}>
                                                     <FormControl>
                                                         <SelectTrigger className="w-full order-3 sm:order-2 max-sm:col-span-2">
-                                                            <SelectValue placeholder="Виберіть тег вмісту" />
+                                                            <SelectValue placeholder={i18n.t("selectContentTag")} />
                                                         </SelectTrigger>
                                                     </FormControl>
                                                     <SelectContent>
@@ -469,8 +470,8 @@ export default function TimecodeEditor({ movie, onMessage, onLoading }: RootProp
                                         <FormItem>
                                             <FormControl>
                                                 <Textarea
-                                                    placeholder="Опис (необов'язково)"
-                                                    className=" resize-none"
+                                                    placeholder={i18n.t("descriptionOptional")}
+                                                    className="resize-none"
                                                     maxLength={255}
                                                     {...field}
                                                     onChange={(e) => {
@@ -487,54 +488,47 @@ export default function TimecodeEditor({ movie, onMessage, onLoading }: RootProp
                             {segmentFields.length - 1 > index && <hr />}
                         </div>
                     ))}
-                    <div className="text-center ">
+                    <div className="text-center">
                         <Button
                             size="sm"
                             type="button"
                             variant="outline"
                             onClick={() => handleAppendFields()}>
-                            <CirclePlus strokeWidth={2} />
-                            Додати таймкод
-                        </Button>
+                            <CirclePlus strokeWidth={2} />{i18n.t("addTimecode")}</Button>
                     </div>
                 </>)}
 
                 <div className="flex items-center gap-4">
                     <AlertDialog>
-                        <AlertDialogTrigger asChild><Button asChild><span>{timecodeId ? 'Зберегти' : 'Надіслати'}</span></Button></AlertDialogTrigger>
+                        <AlertDialogTrigger asChild><Button asChild><span>{i18n.t(timecodeId ? 'save' : 'send')}</span></Button></AlertDialogTrigger>
                         <AlertDialogContent>
                             <AlertDialogHeader>
-                                <AlertDialogTitle>Підтвердіть дію!</AlertDialogTitle>
+                                <AlertDialogTitle>{i18n.t("confirmAction")}</AlertDialogTitle>
                                 <AlertDialogDescription>
-                                    {timecodeId ?
-                                        'Ви впевнені, що хочете зберегти ці зміни в таймкодах?'
-                                        : 'Ви впевнені, що хочете надіслати ці таймкоди?'
-                                    }
+                                    {i18n.t(timecodeId ? 'alertSaveChangeTimecodes' : 'alertSendTimecodes')}
                                 </AlertDialogDescription>
                             </AlertDialogHeader>
                             <AlertDialogFooter>
-                                <AlertDialogCancel>Ні</AlertDialogCancel>
+                                <AlertDialogCancel>{i18n.t("no")}</AlertDialogCancel>
                                 <AlertDialogAction onClick={() => {
                                     form.handleSubmit(onSubmit, (errors) => {
                                         if (config.debug) console.error(errors);
                                     })();
-                                }}>Так</AlertDialogAction>
+                                }}>{i18n.t("yes")}</AlertDialogAction>
                             </AlertDialogFooter>
                         </AlertDialogContent>
                     </AlertDialog>
 
                     {timecodeId && <AlertDialog>
-                        <AlertDialogTrigger asChild><Button variant='destructive' asChild><span>Видалити</span></Button></AlertDialogTrigger>
+                        <AlertDialogTrigger asChild><Button variant='destructive' asChild><span>{i18n.t("delete")}</span></Button></AlertDialogTrigger>
                         <AlertDialogContent>
                             <AlertDialogHeader>
-                                <AlertDialogTitle>Ви впевнені?</AlertDialogTitle>
-                                <AlertDialogDescription>
-                                    Ця дія призведе до остаточного видалення ваших таймкоди для цього фільму.
-                                </AlertDialogDescription>
+                                <AlertDialogTitle>{i18n.t("areYouSure")}</AlertDialogTitle>
+                                <AlertDialogDescription>{i18n.t("alertDeleteTimecodes")}</AlertDialogDescription>
                             </AlertDialogHeader>
                             <AlertDialogFooter>
-                                <AlertDialogCancel>Ні</AlertDialogCancel>
-                                <AlertDialogAction onClick={handleDelete}>Так</AlertDialogAction>
+                                <AlertDialogCancel>{i18n.t("no")}</AlertDialogCancel>
+                                <AlertDialogAction onClick={handleDelete}>{i18n.t("yes")}</AlertDialogAction>
                             </AlertDialogFooter>
                         </AlertDialogContent>
                     </AlertDialog>}
