@@ -1,4 +1,4 @@
-import config from "../config.json";
+import config from "config";
 
 /**
  * Sends a message to the background script to navigate to a specific extension tab or URL.

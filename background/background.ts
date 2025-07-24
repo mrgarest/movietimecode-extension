@@ -1,7 +1,6 @@
-import OBSClient from "../lib/obs-client";
-import config from "../config.json";
-import { TUser } from "../types/user";
-import { getUser } from "../utils/auth";
+import config from "config";
+import { TUser } from "@/types/user";
+import { getUser } from "@/utils/auth";
 
 /**
  * Opens the extension page when the browser action icon is clicked.

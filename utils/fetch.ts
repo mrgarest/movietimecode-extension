@@ -1,5 +1,5 @@
-import config from "../config.json";
-import { TMovieSearch } from "types/movie";
+import config from "config";
+import { TMovieSearch } from "@/types/movie";
 
 /**
  * Sends a request to the background script.

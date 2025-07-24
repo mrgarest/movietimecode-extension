@@ -1,13 +1,6 @@
 import { BlurPower, TimecodeAction, TimecodeTag } from "@/enums/timecode";
 import { TSegment } from "@/types/timecode";
-import {
-    removePlayerListener,
-    setOBSClient,
-    setPlayerCensorshipAction,
-    setPlayerListener,
-    setPlayerTimeListener,
-    updatePlayerCensorScene,
-} from "./player";
+import { removePlayerListener, setOBSClient, setPlayerCensorshipAction, setPlayerListener, setPlayerTimeListener, updatePlayerCensorScene } from "./player";
 import { StorageDefault } from "@/utils/storage-options";
 import { render } from "preact";
 import { ControlBar } from "./components/control-bar";
@@ -77,7 +70,6 @@ const handleSettings = (settings: TSettings, isOnChanged: boolean) => {
 /**
  * Determines the player and movie title based on the site domain.
  */
-
 const uakino = {
     getPlayer: (): HTMLIFrameElement | undefined =>
         (document.querySelector(

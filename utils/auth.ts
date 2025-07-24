@@ -1,6 +1,6 @@
-import config from "../config.json";
+import config from "config";
 import { goToTab } from "./navigation";
-import { TUser } from "../types/user";
+import { TUser } from "@/types/user";
 
 /**
  * Opens a new tab for authorization

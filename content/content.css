@@ -407,7 +407,7 @@
 .mt-dialog-mc .mt-dialog-title {
   font-size: var(--mt-text-xl);
   font-weight: 700;
-  padding: 1.5rem 1.5rem;
+  padding: 1.5rem 1.5rem 1rem 1.5rem;
 }
 
 .mt-dialog-mc .mt-dialog-x {
@@ -446,7 +446,7 @@
   display: flex;
   flex-direction: column;
   gap: 0.25rem;
-  padding: 1.5rem 1.5rem 1rem 1.5rem;
+  padding: 0 1rem 1.5rem 1rem;
 }
 
 .mt-dialog-mc .mt-movie-item {

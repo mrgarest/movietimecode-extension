@@ -1,4 +1,4 @@
-import { BlurPower, TimecodeAction } from "../enums/timecode";
+import { BlurPower, TimecodeAction } from "@/enums/timecode";
 
 export const StorageDefault = {
   isCensorship: true,
