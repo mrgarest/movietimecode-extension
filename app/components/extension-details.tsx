@@ -8,7 +8,7 @@ export const ExtensionDetails = () => {
                 <a href="https://movietimecode.mrgarest.com/privacy" target="_blank" rel="noopener noreferrer" className="text-link">{i18n.t("privacyPolicy")}</a>
             </div>
             <div>{i18n.t("appName")}</div>
-            <div>v{config.version} (beta)</div>
+            <div>v{config.version}</div>
         </div>
     );
 }

@@ -3,9 +3,10 @@ import { TSegment } from "@/types/timecode";
 import { removePlayerListener, setOBSClient, setPlayerCensorshipAction, setPlayerListener, setPlayerTimeListener, updatePlayerCensorScene } from "./player";
 import { StorageDefault } from "@/utils/storage-options";
 import { render } from "preact";
+import config from "config";
 import { ControlBar } from "./components/control-bar";
 import { TSettings, TSettingsOBSClientNull } from "@/types/storage";
-import { waitForDOMContentLoaded } from "@/utils/page";
+import { waitForDOMContentLoaded, waitForElement } from "@/utils/page";
 
 let settings: TSettings;
 let timeBuffer: number;
@@ -71,13 +72,20 @@ const handleSettings = (settings: TSettings, isOnChanged: boolean) => {
  * Determines the player and movie title based on the site domain.
  */
 const uakino = {
-    getPlayer: (): HTMLIFrameElement | undefined =>
-        (document.querySelector(
-            ".movie-right .players-section #pre"
-        ) as HTMLIFrameElement) ?? undefined,
+    getPlayer: async (): Promise<HTMLIFrameElement | undefined> => {
+        try {
+            return await waitForElement<HTMLIFrameElement>(".movie-right .players-section #playerfr");
+        } catch (e) {
+            if (config.debug) {
+                console.error("Could not find player: ", e);
+            }
+            return undefined;
+        }
+    },
+    getContainerForControlBar: (): HTMLDivElement | undefined =>
+        (document.querySelector(".movie-right .players-section .playlists-ajax") as HTMLDivElement) ?? undefined,
     getTitle: (): string | null =>
-        document.querySelector(".alltitle .origintitle i")?.textContent?.trim() ??
-        null,
+        document.querySelector(".alltitle .origintitle i")?.textContent?.trim() ?? null,
     getYear: (): number | null => {
         const match = document.body.innerHTML.match(/:\/\/[a-z0-9.-]+\.[a-z0-9]+\/find\/year\/(\d+)\//i);
         const year = match?.[1] ? parseInt(match[1], 10) : null;
@@ -85,10 +93,13 @@ const uakino = {
     }
 };
 
+
+
 const playerMap: Record<
     string,
     {
-        getPlayer: () => HTMLIFrameElement | undefined;
+        getPlayer: () => Promise<HTMLIFrameElement | undefined>;
+        getContainerForControlBar: () => HTMLDivElement | undefined;
         getTitle: () => string | null;
         getYear: () => number | null;
     }
@@ -111,14 +122,21 @@ const setHeadrStyles = () => {
 
 (async () => {
     await waitForDOMContentLoaded();
-    const site = playerMap[window.location.hostname];
-    if (!site) return;
+    const hostname = window.location.hostname;
+    const site = playerMap[hostname];
+    if (!site) {
+        if (config.debug) {
+            console.warn(`The website ${hostname} is not supported.`);
+        }
+        return;
+    }
 
-    player = site.getPlayer();
+    player = await site.getPlayer();
+    const containerForControlBar = site.getContainerForControlBar();
 
     let movieTitle: string | null = site.getTitle();
 
-    if (!player || !movieTitle) return;
+    if (!player || !movieTitle || !containerForControlBar) return;
 
     /********************** SETTINGS START **********************/
     const storage = await chrome.storage.sync.get("settings");
@@ -129,7 +147,7 @@ const setHeadrStyles = () => {
     setHeadrStyles();
 
     const rootControlBar = document.createElement("div");
-    player.after(rootControlBar);
+    containerForControlBar.after(rootControlBar);
 
     render(<ControlBar
         player={player}
