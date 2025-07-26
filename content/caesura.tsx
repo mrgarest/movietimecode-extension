@@ -12,7 +12,6 @@ let settings: TSettings;
 let timeBuffer: number;
 let blurPower: BlurPower;
 let nudity: TimecodeAction;
-let token: string | null = null;
 let obsClientSettings: TSettingsOBSClientNull = null;
 let obsCensorScene: string;
 
@@ -37,8 +36,6 @@ chrome.storage.onChanged.addListener((changes, namespace) => {
  * @returns Updated settings object.
  */
 const handleSettings = (settings: TSettings, isOnChanged: boolean) => {
-    token = (settings.token as string) || "";
-
     timeBuffer = (settings.timeBuffer as number) || StorageDefault.timeBuffer;
 
     blurPower = (settings.blurPower as BlurPower) || StorageDefault.blurPower;
@@ -73,17 +70,17 @@ const handleSettings = (settings: TSettings, isOnChanged: boolean) => {
  */
 const uakino = {
     getPlayer: async (): Promise<HTMLIFrameElement | undefined> => {
+        if (document.querySelector<HTMLDivElement>(".movie-right .players-section .playlists-ajax") == undefined) {
+            return document.querySelector<HTMLIFrameElement>('.movie-right .players-section iframe#pre') || undefined;
+        }
         try {
-            return await waitForElement<HTMLIFrameElement>(".movie-right .players-section #playerfr");
+            return await waitForElement<HTMLIFrameElement>('.movie-right .players-section .playlists-ajax iframe#playerfr');
         } catch (e) {
-            if (config.debug) {
-                console.error("Could not find player: ", e);
-            }
             return undefined;
         }
     },
     getContainerForControlBar: (): HTMLDivElement | undefined =>
-        (document.querySelector(".movie-right .players-section .playlists-ajax") as HTMLDivElement) ?? undefined,
+        document.querySelector<HTMLDivElement>(".movie-right .players-section .box.full-text.visible") || undefined,
     getTitle: (): string | null =>
         document.querySelector(".alltitle .origintitle i")?.textContent?.trim() ?? null,
     getYear: (): number | null => {
@@ -92,8 +89,6 @@ const uakino = {
         return Number.isNaN(year) ? null : year;
     }
 };
-
-
 
 const playerMap: Record<
     string,
@@ -107,7 +102,6 @@ const playerMap: Record<
     "uakino.me": uakino, // old
     "uakino.best": uakino
 };
-
 
 /**
  * Adds styles to the <head> of the document.
@@ -132,6 +126,9 @@ const setHeadrStyles = () => {
     }
 
     player = await site.getPlayer();
+    if (!player && config.debug) {
+        console.error("Could not find player");
+    }
     const containerForControlBar = site.getContainerForControlBar();
 
     let movieTitle: string | null = site.getTitle();

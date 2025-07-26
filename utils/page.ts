@@ -22,7 +22,7 @@ export async function waitForDOMContentLoaded() {
  */
 export const waitForElement = <T extends Element = Element>(
   selector: string,
-  timeout: number = 20000,
+  timeout: number = 10000,
   interval: number = 100
 ): Promise<T> => {
   return new Promise((resolve, reject) => {
