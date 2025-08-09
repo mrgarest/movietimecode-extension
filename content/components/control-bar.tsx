@@ -69,9 +69,15 @@ export const ControlBar = ({ player, movie, onTurnOffCensorship, onCensorship }:
         setSearchButtonDisabled(true);
         setStatusIndicator(StatusIndicator.loader);
 
+        const params = new URLSearchParams();
+        params.set("q", encodeURIComponent(title.trim()));
+        if (movie.year != null) {
+            params.set("year", String(movie.year));
+        }
+
         try {
             const data: TTimecodeSearch = await fetchBackground(
-                `${config.baseUrl}/api/v1/timecode/search?q=${encodeURIComponent(title)}`
+                `${config.baseUrl}/api/v1/timecode/search?${params.toString()}`
             ) as TTimecodeSearch;
             if (data.success) renderMovieDialog({
                 data: data,
