@@ -560,6 +560,7 @@
   -webkit-filter: blur(var(--mt-player-blur-light)) !important;
   filter: blur(var(--mt-player-blur-light)) !important;
 }
+
 .mt-player-blur-base {
   -webkit-filter: blur(var(--mt-player-blur-base)) !important;
   filter: blur(var(--mt-player-blur-base)) !important;

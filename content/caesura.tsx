@@ -12,6 +12,8 @@ let settings: TSettings;
 let timeBuffer: number;
 let blurPower: BlurPower;
 let nudity: TimecodeAction;
+let violence: TimecodeAction;
+let sensitiveExpressions: TimecodeAction;
 let obsClientSettings: TSettingsOBSClientNull = null;
 let obsCensorScene: string;
 
@@ -41,6 +43,8 @@ const handleSettings = (settings: TSettings, isOnChanged: boolean) => {
     blurPower = (settings.blurPower as BlurPower) || StorageDefault.blurPower;
 
     nudity = (settings.nudity as TimecodeAction) || StorageDefault.nudity;
+    violence = (settings.violence as TimecodeAction) || StorageDefault.violence;
+    sensitiveExpressions = (settings.sensitiveExpressions as TimecodeAction) || StorageDefault.sensitiveExpressions;
 
     obsClientSettings =
         (settings.obsClient as TSettingsOBSClientNull) || StorageDefault.obsClient;
@@ -48,15 +52,7 @@ const handleSettings = (settings: TSettings, isOnChanged: boolean) => {
     obsCensorScene =
         (settings.obsCensorScene as string) || StorageDefault.obsCensorScene;
 
-    switch (TimecodeAction.obsSceneChange) {
-        case nudity:
-            enableOBSClient = true;
-            break;
-
-        default:
-            enableOBSClient = false;
-            break;
-    }
+    enableOBSClient = [nudity, violence, sensitiveExpressions].includes(TimecodeAction.obsSceneChange);
 
     if (isOnChanged) {
         updatePlayerCensorScene(obsCensorScene);
@@ -93,7 +89,7 @@ const uakino = {
 const playerMap: Record<
     string,
     {
-        getPlayer: () => Promise<HTMLIFrameElement | undefined>;
+        getPlayer: () => Promise<Thtml>;
         getContainerForControlBar: () => HTMLDivElement | undefined;
         getTitle: () => string | null;
         getYear: () => number | null;
@@ -230,6 +226,10 @@ const getActionForTag = (tag: TimecodeTag): TimecodeAction | null => {
     switch (tag) {
         case TimecodeTag.NUDITY:
             return nudity;
+        case TimecodeTag.VIOLENCE:
+            return violence;
+        case TimecodeTag.SENSITIVE_EXPRESSIONS:
+            return sensitiveExpressions;
         default:
             return null;
     }

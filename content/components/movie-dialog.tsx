@@ -46,7 +46,7 @@ const MovieDialog = ({ data, onSelected }: RootProps) => {
                     <div className="mt-origin-title">{data.title != null ? data.original_title + " " : ""}({data.release_year})</div>
                 </div>
                     <div>
-                        <div className="mt-label">Виберіть таймкоди</div>
+                        <div className="mt-label">{i18n.t('selectTimecodes')}</div>
                         <div className="mt-select">
                             {data.timecodes?.map((item, index) =>
                                 <div

@@ -1,15 +1,17 @@
 import { BlurPower, TimecodeAction } from "@/enums/timecode";
-import OBSClient, { TScene } from "@/lib/obs-client";
+import OBSClient, { OBSType, TScene } from "@/lib/obs-client";
 import { TSettingsOBSClientNull } from "@/types/storage";
 import { TSegment } from "@/types/timecode";
-import config from 'config';
+import config from "config";
 import { secondsToTime } from "@/utils/format";
+import { renderQuestionDialog } from "./components/question-dialog";
+import i18n from "@/lib/i18n";
+import { playAlerSound } from "@/utils/alert";
 
 let isPlayerListener = false;
-
 let obsClient: OBSClient | null = null;
+let obsType: string | null = null;
 let isConnectedObsClient: boolean = false;
-
 let activeSceneOBS: TScene | null;
 let obsCensorScene: TScene | null;
 
@@ -67,6 +69,36 @@ export const setPlayerListener = async (
 };
 
 /**
+ * Handles OBS client connection errors by displaying a dialog.
+ */
+const handleObsClientError = () => {
+  let obsName: string;
+  switch (obsType) {
+    case OBSType.obsstudio:
+      obsName = "OBS Studio";
+      break;
+    case OBSType.streamlabs:
+      obsName = "Streamlabs OBS";
+      break;
+    default:
+      obsName = "OBS";
+      break;
+  }
+  renderQuestionDialog({
+    sound: true,
+    id: "obs-connection-error",
+    title: i18n.t("connectionError"),
+    description: i18n.t("unableConnectObsOrConnectionLost", { obs: obsName }),
+    buttons: [
+      {
+        text: i18n.t("close"),
+        style: "primary",
+      },
+    ],
+  });
+};
+
+/**
  * Sets up the OBS client for censorship actions.
  * @param enableOBSClient Indicates whether to use the OBS client.
  * @param obsClientSettings OBS client settings.
@@ -79,6 +111,7 @@ export const setOBSClient = async (
 ) => {
   if (!isPlayerListener || !obsClientSettings || !enableOBSClient) return;
 
+  obsType = obsClientSettings.type;
   try {
     obsClient?.disconnect();
     obsClient = new OBSClient(obsClientSettings);
@@ -116,6 +149,10 @@ const handlePlayer = (e: MessageEvent) => {
       break;
     case "exitfullscreen":
       break;
+    case "play":
+      break;
+    case "volume":
+      break;
     default:
       break;
   }
@@ -149,7 +186,7 @@ export const setPlayerCensorshipAction = async ({
   player,
 }: {
   isCensored: boolean;
-  time: number;
+  time: number,
   action: TimecodeAction | null;
   blurPower: BlurPower | null;
   segment: TSegment;
@@ -167,7 +204,9 @@ export const setPlayerCensorshipAction = async ({
       cw?.postMessage({ api: isCensored ? "mute" : "unmute" }, "*");
       break;
     case TimecodeAction.pause:
-      if (isCensored) cw?.postMessage({ api: "pause" }, "*");
+      if (!isCensored) break;
+      cw?.postMessage({ api: "pause" }, "*");
+      playAlerSound();
       break;
     case TimecodeAction.skip:
       if (isCensored && segment.end_time)
@@ -193,6 +232,7 @@ export const setPlayerCensorshipAction = async ({
             segment: segment,
             player: player,
           });
+          handleObsClientError();
           return;
         }
 
@@ -210,12 +250,14 @@ export const setPlayerCensorshipAction = async ({
             segment: segment,
             player: player,
           });
+          handleObsClientError();
           return;
         }
       } catch (error) {
         if (config.debug) {
           console.error(`catch ${action}: `, error);
         }
+        handleObsClientError();
         if (isCensored) {
           debugLogCensorshipAction(false, time, segment, isCensored, action);
           setPlayerCensorshipAction({
@@ -245,17 +287,17 @@ export const setPlayerCensorshipAction = async ({
  * @param isCensored Indicates whether censorship was applied.
  * @param action Action type.
  */
-const debugLogCensorshipAction = (
+function debugLogCensorshipAction(
   ok: boolean = true,
   time: number,
   segment: TSegment,
   isCensored: boolean,
   action: TimecodeAction | null
-) => {
+) {
   if (!config.debug) return;
   const tl = secondsToTime(time);
   const st = secondsToTime(isCensored ? segment.start_time : segment.end_time);
-  const msg = `Censorship Action: ${action} | Time: ${tl} (${st}) | Censored: ${isCensored} | Segment ID: ${segment.id}`;
+  let msg = `Censorship Action: ${action} | Time: ${tl} (${st}) | Censored: ${isCensored} | Segment ID: ${segment.id}`;
   ok ? console.log(msg) : console.error(msg);
 };
 

@@ -13,6 +13,8 @@ export default function Settings() {
     const [timeBuffer, setTimeBuffer] = useState<number>(StorageDefault.timeBuffer);
     const [blurPower, setBlurPower] = useState<BlurPower>(StorageDefault.blurPower);
     const [nudity, setNudity] = useState<TimecodeAction>(StorageDefault.nudity);
+    const [violence, setViolence] = useState<TimecodeAction>(StorageDefault.violence);
+    const [sensitiveExpressions, setSensitiveExpressions] = useState<TimecodeAction>(StorageDefault.sensitiveExpressions);
 
     useEffect(() => {
         if (chrome?.storage?.sync) {
@@ -21,13 +23,16 @@ export default function Settings() {
                 curentSettings.timeBuffer = curentSettings.timeBuffer as number ?? StorageDefault.timeBuffer
                 curentSettings.blurPower = curentSettings.blurPower as BlurPower ?? StorageDefault.blurPower
                 curentSettings.nudity = curentSettings.nudity as TimecodeAction ?? StorageDefault.nudity
+                curentSettings.violence = curentSettings.violence as TimecodeAction ?? StorageDefault.violence
+                curentSettings.sensitiveExpressions = curentSettings.sensitiveExpressions as TimecodeAction ?? StorageDefault.sensitiveExpressions
 
                 setSettings(curentSettings)
 
                 setTimeBuffer(curentSettings.timeBuffer);
                 setBlurPower(curentSettings.blurPower);
                 setNudity(curentSettings.nudity);
-
+                setViolence(curentSettings.violence);
+                setSensitiveExpressions(curentSettings.sensitiveExpressions);
             });
         } else if (config.debug) {
             console.warn("chrome.storage is not available.");
@@ -57,6 +62,18 @@ export default function Settings() {
         const n = Number(value);
         setNudity(n);
         updateSettings({ nudity: n as TimecodeAction });
+    };
+
+    const handleViolence = (value: string) => {
+        const n = Number(value);
+        setViolence(n);
+        updateSettings({ violence: n as TimecodeAction });
+    };
+
+    const handleSensitiveExpressions = (value: string) => {
+        const n = Number(value);
+        setSensitiveExpressions(n);
+        updateSettings({ sensitiveExpressions: n as TimecodeAction });
     };
 
     const getSelectItemBehavior = (settings: TSettings) => [
@@ -109,11 +126,48 @@ export default function Settings() {
             <div className="space-y-4">
                 <h4 className="text-xl font-bold">{i18n.t("behavior")}</h4>
                 <SettingsCard
-                    title={i18n.t("nudity")}>
+                    title={i18n.t("nudity")}
+                    description={i18n.t("nudityDescription")}>
                     <Select
                         onValueChange={handleNudity}
                         defaultValue={nudity.toString()}
                         value={nudity.toString()}>
+                        <SelectTrigger className="w-44">
+                            <SelectValue placeholder={i18n.t("selectBehavior")} />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectGroup>
+                                {selectItemBehavior.map((item, index) => <SelectItem key={index} disabled={item.disabled} value={item.value.toString()}>{item.text}</SelectItem>)}
+                            </SelectGroup>
+                        </SelectContent>
+                    </Select>
+                </SettingsCard>
+                <hr />
+                <SettingsCard
+                    title={i18n.t("violence")}
+                    description={i18n.t("violenceDescription")}>
+                    <Select
+                        onValueChange={handleViolence}
+                        defaultValue={violence.toString()}
+                        value={violence.toString()}>
+                        <SelectTrigger className="w-44">
+                            <SelectValue placeholder={i18n.t("selectBehavior")} />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectGroup>
+                                {selectItemBehavior.map((item, index) => <SelectItem key={index} disabled={item.disabled} value={item.value.toString()}>{item.text}</SelectItem>)}
+                            </SelectGroup>
+                        </SelectContent>
+                    </Select>
+                </SettingsCard>
+                <hr />
+                <SettingsCard
+                    title={i18n.t("sensitiveExpressions")}
+                    description={i18n.t("sensitiveExpressionsDescription")}>
+                    <Select
+                        onValueChange={handleSensitiveExpressions}
+                        defaultValue={sensitiveExpressions.toString()}
+                        value={sensitiveExpressions.toString()}>
                         <SelectTrigger className="w-44">
                             <SelectValue placeholder={i18n.t("selectBehavior")} />
                         </SelectTrigger>

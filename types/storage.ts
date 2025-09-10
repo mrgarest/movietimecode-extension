@@ -7,6 +7,8 @@ export type TSettings = {
   timeBuffer?: number;
   blurPower?: BlurPower;
   nudity?: TimecodeAction;
+  violence?: TimecodeAction;
+  sensitiveExpressions?: TimecodeAction;
   obsClient?: TSettingsOBSClientNull;
   obsCensorScene?: string | null;
 };

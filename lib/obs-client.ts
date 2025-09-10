@@ -1,6 +1,6 @@
 import sha256 from "crypto-js/sha256";
 import Base64 from "crypto-js/enc-base64";
-import config from '../config.json';
+import config from "../config.json";
 
 export enum OBSType {
   streamlabs = "streamlabs",
@@ -60,7 +60,7 @@ export default class OBSClient {
   constructor(options: Options) {
     this.options = options;
   }
-
+  
   /**
    * Connects to OBS via WebSocket.
    * @returns true if the connection is successful, or false in case of an error.

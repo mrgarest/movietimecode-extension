@@ -94,7 +94,6 @@ export default function OBSControl() {
     };
 
     const handleConnection = async (values: z.infer<typeof formSchemaConnection>) => {
-
         if (!isConnectionEnabled) return;
         try {
             setEnabledButtons(false);
@@ -108,9 +107,6 @@ export default function OBSControl() {
             obsClient.onError((_msg) => {
                 setConnectionEnabled(true);
             });
-            // obsClient.onClose((_msg) => {
-            //     setConnectionEnabled(true);
-            // });
 
             const isConnected = await obsClient.connect();
             obsClient.disconnect();

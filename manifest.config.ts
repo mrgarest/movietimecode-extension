@@ -4,7 +4,9 @@ import config from "./config.json";
 const icon = (size: number) => `/icons/${size}.png`;
 
 export default function getManifest() {
-  const baseUrl = config.baseUrl.replace(/^https?:\/\//, "*://*.").replace(/(:\d+)(\/|$)/, '$2');
+  const baseUrl = config.baseUrl
+    .replace(/^https?:\/\//, "*://*.")
+    .replace(/(:\d+)(\/|$)/, "$2");
   return {
     name: "__MSG_appName__",
     description: "__MSG_appDesc__",
@@ -44,7 +46,7 @@ export default function getManifest() {
     ],
     web_accessible_resources: [
       {
-        resources: ["images/*", "icons/*"],
+        resources: ["images/*", "icons/*", "sounds/*"],
         matches: ["<all_urls>"],
       },
     ],

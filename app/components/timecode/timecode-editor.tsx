@@ -22,7 +22,12 @@ import { TMovieSearchItem } from "@/types/movie";
 import { TResponse } from "@/types/response";
 import { logOut } from "@/utils/auth";
 import i18n from "@/lib/i18n";
-
+import {
+    Accordion,
+    AccordionContent,
+    AccordionItem,
+    AccordionTrigger,
+} from "@/app/components/ui/accordion"
 /**
  * Form validation scheme
  */
@@ -101,6 +106,14 @@ export default function TimecodeEditor({ movie, onMessage, onLoading }: RootProp
             {
                 value: String(TimecodeTag.NUDITY),
                 title: i18n.t("nudity")
+            },
+            {
+                value: String(TimecodeTag.VIOLENCE),
+                title: i18n.t("violence")
+            },
+            {
+                value: String(TimecodeTag.SENSITIVE_EXPRESSIONS),
+                title: i18n.t("sensitiveExpressions")
             }
         ];
 
@@ -341,24 +354,25 @@ export default function TimecodeEditor({ movie, onMessage, onLoading }: RootProp
     }, [movie]);
 
     return (
-        <Form {...form}>
-            {movie !== null && <>
-                <div
-                    className="flex items-center gap-4">
-                    {movie.poster_url != null && <img
-                        className="w-16 rounded-md select-none pointer-events-none border border-input"
-                        src={movie.poster_url} />}
-                    <div className="space-y-1">
-                        <div>
-                            <span className="text-2xl font-bold">{movie.title || movie.original_title}</span><span className="text-xs text-muted pt-1.5 pl-2">({movie.release_year})</span>
+        <>
+            <Form {...form}>
+                {movie !== null && <>
+                    <div
+                        className="flex items-center gap-4">
+                        {movie.poster_url != null && <img
+                            className="w-16 rounded-md select-none pointer-events-none border border-input"
+                            src={movie.poster_url} />}
+                        <div className="space-y-1">
+                            <div>
+                                <span className="text-2xl font-bold">{movie.title || movie.original_title}</span><span className="text-xs text-muted pt-1.5 pl-2">({movie.release_year})</span>
+                            </div>
+                            {movie.title != null && <div className="text-xs text-muted font-medium">{movie.original_title}</div>}
                         </div>
-                        {movie.title != null && <div className="text-xs text-muted font-medium">{movie.original_title}</div>}
                     </div>
-                </div>
-                <hr />
-            </>}
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-                {/* <div className="space-y-5">
+                    <hr />
+                </>}
+                <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+                    {/* <div className="space-y-5">
                     <div className="space-y-1">
                         <FormLabel htmlFor="content_classifications">Класифікація контенту для Twitch</FormLabel>
                         <FormDescription>Виберіть класифікації контенту, яку стрімер повинен увімкнути під час перегляду фільмів на Twitch.</FormDescription>
@@ -395,146 +409,172 @@ export default function TimecodeEditor({ movie, onMessage, onLoading }: RootProp
                     </div>
                 </div>
                 <hr /> */}
-                <div className="space-y-2">
-                    <div className="flex items-start gap-4 rounded-md">
-                        {timeField(`duration`, form.control)}
-                        <div className="space-y-1 leading-none">
-                            <Label>{i18n.t("movieDuration")}</Label>
-                            <FormDescription>{i18n.t("movieDurationDescription")}</FormDescription>
-                        </div>
-                    </div>
-                    {form.formState.errors.duration && <FormMessage>{form.formState.errors.duration.message}</FormMessage>}
-                </div>
-
-                <hr />
-                <div className="flex flex-row items-start gap-3 space-y-0">
-                    <Checkbox
-                        id="noTimecodes"
-                        checked={noTimecodes}
-                        onCheckedChange={(checked) => handleNoTimecodes(checked)} />
-                    <div className="space-y-1 leading-none">
-                        <Label htmlFor="noTimecodes" className="cursor-pointer">{i18n.t("noTimecodesFound")}</Label>
-                        <div className="text-muted-foreground text-sm">{i18n.t("noTimecodesFoundDescription")}</div>
-                    </div>
-                </div>
-                {!noTimecodes && (<>
-                    <hr />
-                    {segmentFields.map((field, index) => (
-                        <div key={field.id} className="space-y-6">
-                            <div className="space-y-3">
-                                <FormLabel htmlFor={`segments.${index}`}>{i18n.t("timecodeIndex", { index: index + 1 })}</FormLabel>
-                                <div className="space-y-2">
-                                    <div className={cn('grid grid-rows-2 sm:grid-rows-1 items-start gap-2', segmentFields.length > 1 ? 'grid-cols-[1fr_auto] sm:grid-cols-[auto_1fr_auto]' : ' grid-cols-1 sm:grid-cols-[auto_1fr]')}>
-                                        <div className="flex items-center gap-2 mr-2 order-1">
-                                            {timeField(`segments.${index}.start_time`, form.control)}
-                                            <span className="select-none">—</span>
-                                            {timeField(`segments.${index}.end_time`, form.control)}
-                                        </div>
-
-                                        <FormField
-                                            control={form.control}
-                                            name={`segments.${index}.tag_id`}
-                                            render={({ field }) => (
-                                                <Select
-                                                    onValueChange={field.onChange}
-                                                    defaultValue={field.value}>
-                                                    <FormControl>
-                                                        <SelectTrigger className="w-full order-3 sm:order-2 max-sm:col-span-2">
-                                                            <SelectValue placeholder={i18n.t("selectContentTag")} />
-                                                        </SelectTrigger>
-                                                    </FormControl>
-                                                    <SelectContent>
-                                                        {tags.map((itmeField, index) => (
-                                                            <SelectItem key={index} value={itmeField.value}>{itmeField.title}</SelectItem>
-                                                        ))}
-                                                    </SelectContent>
-                                                </Select>
-                                            )}
-                                        />
-
-                                        {segmentFields.length > 1 && <div className="order-2 sm:order-3"><Trash2
-                                            size={36}
-                                            strokeWidth={1.5}
-                                            onClick={() => removeSegment(index)}
-                                            className="p-2 hover:bg-red-500/15 rounded-lg duration-300 cursor-pointer text-red-500" /></div>}
-
-                                    </div>
-                                    {form.formState.errors.segments?.[index]?.start_time && <FormMessage>{form.formState.errors.segments[index].start_time.message}</FormMessage>}
-                                    {form.formState.errors.segments?.[index]?.tag_id && <FormMessage>{form.formState.errors.segments[index].tag_id.message}</FormMessage>}
-                                </div>
-
-                                <FormField
-                                    control={form.control}
-                                    name={`segments.${index}.description`}
-                                    render={({ field }) => (
-                                        <FormItem>
-                                            <FormControl>
-                                                <Textarea
-                                                    placeholder={i18n.t("descriptionOptional")}
-                                                    className="resize-none"
-                                                    maxLength={255}
-                                                    {...field}
-                                                    onChange={(e) => {
-                                                        const sanitizedValue = e.target.value.replace(/[\n\rЫыЪъЁёЭэ]/g, '');
-                                                        field.onChange(sanitizedValue);
-                                                    }}
-                                                />
-                                            </FormControl>
-                                            <FormMessage />
-                                        </FormItem>
-                                    )}
-                                />
+                    <div className="space-y-2">
+                        <div className="flex items-start gap-4 rounded-md">
+                            {timeField(`duration`, form.control)}
+                            <div className="space-y-1 leading-none">
+                                <Label>{i18n.t("movieDuration")}</Label>
+                                <FormDescription>{i18n.t("movieDurationDescription")}</FormDescription>
                             </div>
-                            {segmentFields.length - 1 > index && <hr />}
                         </div>
-                    ))}
-                    <div className="text-center">
-                        <Button
-                            size="sm"
-                            type="button"
-                            variant="outline"
-                            onClick={() => handleAppendFields()}>
-                            <CirclePlus strokeWidth={2} />{i18n.t("addTimecode")}</Button>
+                        {form.formState.errors.duration && <FormMessage>{form.formState.errors.duration.message}</FormMessage>}
                     </div>
-                </>)}
 
-                <div className="flex items-center gap-4">
-                    <AlertDialog>
-                        <AlertDialogTrigger asChild><Button asChild><span>{i18n.t(timecodeId ? 'save' : 'send')}</span></Button></AlertDialogTrigger>
-                        <AlertDialogContent>
-                            <AlertDialogHeader>
-                                <AlertDialogTitle>{i18n.t("confirmAction")}</AlertDialogTitle>
-                                <AlertDialogDescription>
-                                    {i18n.t(timecodeId ? 'alertSaveChangeTimecodes' : 'alertSendTimecodes')}
-                                </AlertDialogDescription>
-                            </AlertDialogHeader>
-                            <AlertDialogFooter>
-                                <AlertDialogCancel>{i18n.t("no")}</AlertDialogCancel>
-                                <AlertDialogAction onClick={() => {
-                                    form.handleSubmit(onSubmit, (errors) => {
-                                        if (config.debug) console.error(errors);
-                                    })();
-                                }}>{i18n.t("yes")}</AlertDialogAction>
-                            </AlertDialogFooter>
-                        </AlertDialogContent>
-                    </AlertDialog>
+                    <hr />
+                    <div className="flex flex-row items-start gap-3 space-y-0">
+                        <Checkbox
+                            id="noTimecodes"
+                            checked={noTimecodes}
+                            onCheckedChange={(checked) => handleNoTimecodes(checked)} />
+                        <div className="space-y-1 leading-none">
+                            <Label htmlFor="noTimecodes" className="cursor-pointer">{i18n.t("noTimecodesFound")}</Label>
+                            <div className="text-muted-foreground text-sm">{i18n.t("noTimecodesFoundDescription")}</div>
+                        </div>
+                    </div>
+                    {!noTimecodes && (<>
+                        <hr />
+                        {segmentFields.map((field, index) => (
+                            <div key={field.id} className="space-y-6">
+                                <div className="space-y-3">
+                                    <FormLabel htmlFor={`segments.${index}`}>{i18n.t("timecodeIndex", { index: index + 1 })}</FormLabel>
+                                    <div className="space-y-2">
+                                        <div className={cn('grid grid-rows-2 sm:grid-rows-1 items-start gap-2', segmentFields.length > 1 ? 'grid-cols-[1fr_auto] sm:grid-cols-[auto_1fr_auto]' : ' grid-cols-1 sm:grid-cols-[auto_1fr]')}>
+                                            <div className="flex items-center gap-2 mr-2 order-1">
+                                                {timeField(`segments.${index}.start_time`, form.control)}
+                                                <span className="select-none">—</span>
+                                                {timeField(`segments.${index}.end_time`, form.control)}
+                                            </div>
 
-                    {timecodeId && <AlertDialog>
-                        <AlertDialogTrigger asChild><Button variant='destructive' asChild><span>{i18n.t("delete")}</span></Button></AlertDialogTrigger>
-                        <AlertDialogContent>
-                            <AlertDialogHeader>
-                                <AlertDialogTitle>{i18n.t("areYouSure")}</AlertDialogTitle>
-                                <AlertDialogDescription>{i18n.t("alertDeleteTimecodes")}</AlertDialogDescription>
-                            </AlertDialogHeader>
-                            <AlertDialogFooter>
-                                <AlertDialogCancel>{i18n.t("no")}</AlertDialogCancel>
-                                <AlertDialogAction onClick={handleDelete}>{i18n.t("yes")}</AlertDialogAction>
-                            </AlertDialogFooter>
-                        </AlertDialogContent>
-                    </AlertDialog>}
-                </div>
-            </form>
-        </Form>
+                                            <FormField
+                                                control={form.control}
+                                                name={`segments.${index}.tag_id`}
+                                                render={({ field }) => (
+                                                    <Select
+                                                        onValueChange={field.onChange}
+                                                        defaultValue={field.value}>
+                                                        <FormControl>
+                                                            <SelectTrigger className="w-full order-3 sm:order-2 max-sm:col-span-2">
+                                                                <SelectValue placeholder={i18n.t("selectContentTag")} />
+                                                            </SelectTrigger>
+                                                        </FormControl>
+                                                        <SelectContent>
+                                                            {tags.map((itmeField, index) => (
+                                                                <SelectItem key={index} value={itmeField.value}>{itmeField.title}</SelectItem>
+                                                            ))}
+                                                        </SelectContent>
+                                                    </Select>
+                                                )}
+                                            />
+
+                                            {segmentFields.length > 1 && <div className="order-2 sm:order-3"><Trash2
+                                                size={36}
+                                                strokeWidth={1.5}
+                                                onClick={() => removeSegment(index)}
+                                                className="p-2 hover:bg-red-500/15 rounded-lg duration-300 cursor-pointer text-red-500" /></div>}
+
+                                        </div>
+                                        {form.formState.errors.segments?.[index]?.start_time && <FormMessage>{form.formState.errors.segments[index].start_time.message}</FormMessage>}
+                                        {form.formState.errors.segments?.[index]?.tag_id && <FormMessage>{form.formState.errors.segments[index].tag_id.message}</FormMessage>}
+                                    </div>
+
+                                    <FormField
+                                        control={form.control}
+                                        name={`segments.${index}.description`}
+                                        render={({ field }) => (
+                                            <FormItem>
+                                                <FormControl>
+                                                    <Textarea
+                                                        placeholder={i18n.t("descriptionOptional")}
+                                                        className="resize-none"
+                                                        maxLength={255}
+                                                        {...field}
+                                                        onChange={(e) => {
+                                                            const sanitizedValue = e.target.value.replace(/[\n\rЫыЪъЁёЭэ]/g, '');
+                                                            field.onChange(sanitizedValue);
+                                                        }}
+                                                    />
+                                                </FormControl>
+                                                <FormMessage />
+                                            </FormItem>
+                                        )}
+                                    />
+                                </div>
+                                {segmentFields.length - 1 > index && <hr />}
+                            </div>
+                        ))}
+                        <div className="text-center">
+                            <Button
+                                size="sm"
+                                type="button"
+                                variant="outline"
+                                onClick={() => handleAppendFields()}>
+                                <CirclePlus strokeWidth={2} />{i18n.t("addTimecode")}</Button>
+                        </div>
+                    </>)}
+
+                    <div className="flex items-center gap-4">
+                        <AlertDialog>
+                            <AlertDialogTrigger asChild><Button asChild><span>{i18n.t(timecodeId ? 'save' : 'send')}</span></Button></AlertDialogTrigger>
+                            <AlertDialogContent>
+                                <AlertDialogHeader>
+                                    <AlertDialogTitle>{i18n.t("confirmAction")}</AlertDialogTitle>
+                                    <AlertDialogDescription>
+                                        {i18n.t(timecodeId ? 'alertSaveChangeTimecodes' : 'alertSendTimecodes')}
+                                    </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                    <AlertDialogCancel>{i18n.t("no")}</AlertDialogCancel>
+                                    <AlertDialogAction onClick={() => {
+                                        form.handleSubmit(onSubmit, (errors) => {
+                                            if (config.debug) console.error(errors);
+                                        })();
+                                    }}>{i18n.t("yes")}</AlertDialogAction>
+                                </AlertDialogFooter>
+                            </AlertDialogContent>
+                        </AlertDialog>
+
+                        {timecodeId && <AlertDialog>
+                            <AlertDialogTrigger asChild><Button variant='destructive' asChild><span>{i18n.t("delete")}</span></Button></AlertDialogTrigger>
+                            <AlertDialogContent>
+                                <AlertDialogHeader>
+                                    <AlertDialogTitle>{i18n.t("areYouSure")}</AlertDialogTitle>
+                                    <AlertDialogDescription>{i18n.t("alertDeleteTimecodes")}</AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                    <AlertDialogCancel>{i18n.t("no")}</AlertDialogCancel>
+                                    <AlertDialogAction onClick={handleDelete}>{i18n.t("yes")}</AlertDialogAction>
+                                </AlertDialogFooter>
+                            </AlertDialogContent>
+                        </AlertDialog>}
+                    </div>
+                </form>
+            </Form>
+            <div className="space-y-2 border-t mt-12 pt-6">
+                <h4 className="text-2xl font-bold">FAQ</h4>
+                <Accordion
+                    type="single"
+                    collapsible
+                    className="w-full">
+                    <AccordionItem value="item-1">
+                        <AccordionTrigger>{i18n.t("contentTags")}</AccordionTrigger>
+                        <AccordionContent className="space-y-3 text-balance">
+                            <div>
+                                <p><b>{i18n.t("nudity")}</b></p>
+                                <p>{i18n.t("nudityDescription")}</p>
+                            </div>
+                            <div>
+                                <p><b>{i18n.t("violence")}</b></p>
+                                <p>{i18n.t("violenceDescription")}</p>
+                            </div>
+                            <div>
+                                <p><b>{i18n.t("sensitiveExpressions")}</b></p>
+                                <p>{i18n.t("sensitiveExpressionsDescription")}</p>
+                            </div>
+                        </AccordionContent>
+                    </AccordionItem>
+                </Accordion>
+            </div>
+        </>
     );
 }
 

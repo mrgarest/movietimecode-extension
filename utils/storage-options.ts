@@ -5,6 +5,8 @@ export const StorageDefault = {
   timeBuffer: 0,
   blurPower: BlurPower.base,
   nudity: TimecodeAction.blur,
+  violence: TimecodeAction.blur,
+  sensitiveExpressions: TimecodeAction.mute,
   obsClient: null,
   obsCensorScene: "mt-censor",
 };

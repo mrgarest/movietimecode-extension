@@ -1,10 +1,14 @@
+import { playAlerSound } from "@/utils/alert";
 import { Button, TButtonStyle } from "./ui/button";
 import { removeDialog, renderDialog } from "@/utils/dialog";
 
 type RootProps = {
+    id?: string;
+    sound?: boolean;
     title: string;
     description?: string;
-    buttons: QuestionDialogButton[]
+    buttons: QuestionDialogButton[],
+    onDismiss?: () => void
 };
 
 type QuestionDialogButton = {
@@ -21,7 +25,9 @@ type QuestionDialogButton = {
  * @param description - dialog description
  * @param buttons - dialog buttons
  */
-const QuestionDialog = ({ title, description = undefined, buttons }: RootProps) => {
+const QuestionDialog = ({ title, description = undefined, buttons, sound = false }: RootProps) => {
+    sound && playAlerSound();
+
     return (
         <div className="mt-dialog-container mt-dialog-question">
             <div className="mt-title">{title}</div>
@@ -48,7 +54,12 @@ const QuestionDialog = ({ title, description = undefined, buttons }: RootProps) 
  * @param props - dialog props
  */
 let container: HTMLDivElement;
-export const renderQuestionDialog = (props: RootProps) => renderDialog("question", <QuestionDialog {...props} />, (e) => container = e);
+let id: string | undefined;
+export const renderQuestionDialog = (props: RootProps) => {
+    if (props.id !== undefined && id === props.id) return;
+    id = props.id;
+    renderDialog("question", <QuestionDialog {...props} />, (e) => container = e);
+}
 
 /**
  * Dismisses the QuestionDialog.
@@ -56,4 +67,5 @@ export const renderQuestionDialog = (props: RootProps) => renderDialog("question
 export const dismissQuestionDialog = () => {
     if (!container) return;
     removeDialog(container);
+    id = undefined;
 };
