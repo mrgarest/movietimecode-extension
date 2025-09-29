@@ -1,7 +1,7 @@
 import { Outlet, Link } from "react-router-dom";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
-import { Aperture, Settings, User } from "lucide-react";
+import { Aperture, Command, Settings, User } from "lucide-react";
 import { ExtensionDetails } from "./extension-details";
 import i18n from "@/lib/i18n";
 
@@ -15,6 +15,11 @@ const navItems = [
         ico: Aperture,
         to: '/settings/obs-control',
         text: i18n.t('obsManagement')
+    },
+    {
+        ico: Command,
+        to: '/settings/hotkeys',
+        text: i18n.t('hotkeys')
     },
     {
         ico: User,

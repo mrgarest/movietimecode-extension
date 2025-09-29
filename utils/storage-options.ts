@@ -7,6 +7,7 @@ export const StorageDefault = {
   nudity: TimecodeAction.blur,
   violence: TimecodeAction.blur,
   sensitiveExpressions: TimecodeAction.mute,
+  playerContentCensorshipCommand: TimecodeAction.blur,
   obsClient: null,
-  obsCensorScene: "mt-censor",
+  obsCensorScene: null,
 };

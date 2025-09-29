@@ -26,7 +26,7 @@ export default function Settings() {
                 curentSettings.violence = curentSettings.violence as TimecodeAction ?? StorageDefault.violence
                 curentSettings.sensitiveExpressions = curentSettings.sensitiveExpressions as TimecodeAction ?? StorageDefault.sensitiveExpressions
 
-                setSettings(curentSettings)
+                setSettings(curentSettings);
 
                 setTimeBuffer(curentSettings.timeBuffer);
                 setBlurPower(curentSettings.blurPower);

@@ -11,6 +11,7 @@ export type TSettings = {
   sensitiveExpressions?: TimecodeAction;
   obsClient?: TSettingsOBSClientNull;
   obsCensorScene?: string | null;
+  playerContentCensorshipCommand?: TimecodeAction;
 };
 
 export type TSettingsOBSClient = {

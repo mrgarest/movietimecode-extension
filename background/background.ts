@@ -8,6 +8,15 @@ import { getUser } from "@/utils/auth";
 chrome.action.onClicked.addListener(() => goToTab({ to: "/settings" }));
 
 /**
+ * Handles commands and passes them to the content script of the active tab.
+ */
+chrome.commands.onCommand.addListener(async (command) => {
+  const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+  if (!tab?.id) return;
+  chrome.tabs.sendMessage(tab.id, { type: "command", command });
+});
+
+/**
  * Handles messages received via `chrome.runtime.onMessage`.
  */
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {

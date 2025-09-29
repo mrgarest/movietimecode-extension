@@ -5,6 +5,7 @@ import { SideNavLayout } from "@/app/components/layout";
 import NotFound from "./pages/not-found";
 import TimecodePage from "./pages/timecode";
 import User from "./pages/user";
+import Hotkeys from "./pages/hotkeys";
 
 export default function App() {
     return (
@@ -12,6 +13,7 @@ export default function App() {
             <Route path="/settings" element={<SideNavLayout />}>
                 <Route index element={<Settings />} />
                 <Route path="obs-control" element={<OBSControl />} />
+                <Route path="hotkeys" element={<Hotkeys />} />
             </Route>
             <Route path="/" element={<SideNavLayout />}>
                 <Route path="user" element={<User />} />

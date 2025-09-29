@@ -576,6 +576,11 @@
   filter: blur(var(--mt-player-blur-max)) !important;
 }
 
+/*********************** opacity ***********************/
+.mt-opacity-0 {
+  opacity: 0;
+}
+
 /*********************** tooltip ***********************/
 
 [data-mt-tooltip] {

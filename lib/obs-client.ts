@@ -60,7 +60,7 @@ export default class OBSClient {
   constructor(options: Options) {
     this.options = options;
   }
-  
+
   /**
    * Connects to OBS via WebSocket.
    * @returns true if the connection is successful, or false in case of an error.

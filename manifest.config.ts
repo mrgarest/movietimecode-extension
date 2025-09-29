@@ -15,6 +15,14 @@ export default function getManifest() {
     manifest_version: 3,
     default_locale: "uk",
     homepage_url: config.homepageUrl,
+    commands: {
+      "censoring-player-content": {
+        suggested_key: {
+          default: "Alt+X",
+        },
+        description: "Censoring player content"
+      },
+    },
     action: {
       default_icon: icon(128),
       default_title: "__MSG_appName__",
