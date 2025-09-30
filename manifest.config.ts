@@ -20,7 +20,7 @@ export default function getManifest() {
         suggested_key: {
           default: "Alt+X",
         },
-        description: "Censoring player content"
+        description: "__MSG_censoringPlayerContent__"
       },
     },
     action: {

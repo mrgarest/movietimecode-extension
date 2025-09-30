@@ -6,12 +6,16 @@ import { StorageDefault } from '@/utils/storage-options';
 import { TSettings } from '@/types/storage'
 import config from "config";
 import i18n from '@/lib/i18n';
+import { Button } from '../components/ui/button';
+import { Link } from 'react-router-dom';
+
+const altKey: string = /Macintosh|MacIntel|MacPPC|Mac68K/i.test(navigator.userAgent) ? "⌥" : "Alt";
+
 
 export default function Hotkeys() {
     const [settings, setSettings] = useState<TSettings>({});
     const [playerContentCensorshipCommand, setPlayerContentCensorshipCommand] = useState<TimecodeAction>(StorageDefault.playerContentCensorshipCommand);
-
-    const altKey: string = /Macintosh|MacIntel|MacPPC|Mac68K/i.test(navigator.userAgent) ? "⌥" : "Alt";
+    const [playerContentCensorshipHotkey, setPlayerContentCensorshipHotkey] = useState<string>(`${altKey}+X`);
 
     useEffect(() => {
         if (chrome?.storage?.sync) {
@@ -25,6 +29,18 @@ export default function Hotkeys() {
             });
         } else if (config.debug) {
             console.warn("chrome.storage is not available.");
+        }
+        if (chrome.commands) {
+            chrome.commands.getAll((commands) => commands.forEach((command) => {
+                console.log(command.name, command.shortcut);
+                switch (command.name) {
+                    case "censoring-player-content":
+                        setPlayerContentCensorshipHotkey(command.shortcut || `${altKey}+X`);
+                        break;
+                    default:
+                        break;
+                }
+            }));
         }
     }, []);
 
@@ -57,9 +73,14 @@ export default function Hotkeys() {
     return (
         <div className="space-y-8">
             <h1 className="text-h1">{i18n.t('hotkeys')}</h1>
+            <div className="space-y-4 flex items-center justify-between gap-4">
+                <div className="text-sm text-foreground font-normal">{i18n.t("hotkeyAssignmentDescription")}</div>
+                <Button size="sm"
+                    onClick={() => chrome.tabs.create({ url: "chrome://extensions/shortcuts" })}>{i18n.t("settings")}</Button>
+            </div>
             <div className="space-y-4">
                 <SettingsCard
-                    hotkeys={[altKey, 'X']}
+                    hotkey={playerContentCensorshipHotkey}
                     title={i18n.t("censoringPlayerContent")}
                     description={i18n.t("censoringPlayerContentDescription")}>
                     <Select
@@ -77,6 +98,6 @@ export default function Hotkeys() {
                     </Select>
                 </SettingsCard>
             </div>
-        </div>
+        </div >
     );
 }

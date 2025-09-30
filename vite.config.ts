@@ -137,6 +137,7 @@ function CustomLocalesPlugin(): Plugin {
             {
               appName: { message: translation.appName },
               appDesc: { message: translation.appDesc },
+              censoringPlayerContent: { message: translation.censoringPlayerContent },
             },
             null,
             2
