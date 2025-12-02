@@ -6,6 +6,8 @@ import NotFound from "./pages/not-found";
 import TimecodePage from "./pages/timecode";
 import User from "./pages/user";
 import Hotkeys from "./pages/hotkeys";
+import Chatbot from "./pages/chatbot";
+import Backup from "./pages/backup";
 
 export default function App() {
     return (
@@ -13,10 +15,12 @@ export default function App() {
             <Route path="/settings" element={<SideNavLayout />}>
                 <Route index element={<Settings />} />
                 <Route path="obs-control" element={<OBSControl />} />
+                <Route path="chatbot" element={<Chatbot />} />
                 <Route path="hotkeys" element={<Hotkeys />} />
             </Route>
             <Route path="/" element={<SideNavLayout />}>
                 <Route path="user" element={<User />} />
+                <Route path="backup" element={<Backup />} />
             </Route>
             <Route path="timecode" element={<TimecodePage />} />
             <Route path="*" element={<NotFound />} />

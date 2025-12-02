@@ -11,6 +11,7 @@ export type TScene = {
   id: string;
   name: string;
 };
+
 interface Options {
   type: string;
   host?: string | null;
@@ -21,7 +22,7 @@ interface Options {
 export default class OBSClient {
   private options: Options;
   private ws: WebSocket | null = null;
-  private timeout = 5000;
+  private timeout:number = 5000;
   private isConnected: boolean = false;
   private ids: { [key: string]: number } = {
     connect: 100,
@@ -102,12 +103,12 @@ export default class OBSClient {
 
       this.ws.onclose = () => {
         this.isConnected = false;
-        if (config.debug) console.log("WebSocket Close");
+        if (config.debug) console.log("[OBSClient] WebSocket Close");
         if (this.onCloseListener != null) this.onCloseListener(event);
       };
       this.message();
       this.ws!.onopen = () => {
-        if (config.debug) console.log("WebSocket Open");
+        if (config.debug) console.log("[OBSClient] WebSocket Open");
         if (OBSType.streamlabs == this.options.type) {
           this.send({
             id: this.createId("connect"),

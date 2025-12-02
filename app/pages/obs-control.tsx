@@ -56,7 +56,7 @@ export default function OBSControl() {
         if (chrome?.storage?.sync) {
             chrome.storage.sync.get('settings', (result) => {
                 const curentSettings: TSettings = result.settings ?? {};
-                curentSettings.obsCensorScene = curentSettings.obsCensorScene as string | null ?? StorageDefault.obsCensorScene
+                curentSettings.obsCensorScene = curentSettings.obsCensorScene as string | null ?? StorageDefault.obsCensorScene;
 
                 if (curentSettings.obsClient) {
                     formConnection.setValue('host', curentSettings.obsClient.host);
@@ -275,8 +275,8 @@ export default function OBSControl() {
                     <form onSubmit={formConnection.handleSubmit(handleConnection)} className="space-y-4">
                         <div className="space-y-2">
                             <h4 className="text-xl font-bold">{i18n.t("connection")}</h4>
-                            <div className="text-xs text-muted font-medium">{i18n.t("descriptionObsConnectionManagement")}</div>
-                            <div className="text-xs text-foreground font-medium">{i18n.t("obsConnectionInstructions")} {guideLink('Streamlabs', 'streamlabs.png')}, {guideLink('OBS Studio', 'obsstudio.png')}.</div>
+                            <p className="text-xs text-foreground font-medium">{i18n.t("descriptionObsConnectionManagement")}</p>
+                            <p className="text-xs text-foreground font-medium">{i18n.t("obsConnectionInstructions")} {guideLink('Streamlabs', 'streamlabs.png')}, {guideLink('OBS Studio', 'obsstudio.png')}.</p>
                         </div>
                         <FormField
                             control={formConnection.control}

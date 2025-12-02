@@ -28,6 +28,7 @@ import {
     AccordionItem,
     AccordionTrigger,
 } from "@/app/components/ui/accordion"
+
 /**
  * Form validation scheme
  */
@@ -70,7 +71,7 @@ type TEditor = TResponse & {
 };
 
 type RootProps = {
-    movie: TMovieSearchItem
+    movie: TMovieSearchItem;
     onMessage: (b: string) => void;
     onLoading: (b: boolean) => void;
 };
@@ -97,25 +98,6 @@ export default function TimecodeEditor({ movie, onMessage, onLoading }: RootProp
             segments: [segmentValueFields]
         },
     });
-
-    // Content tags
-    const tags: {
-        value: string,
-        title: string,
-    }[] = [
-            {
-                value: String(TimecodeTag.NUDITY),
-                title: i18n.t("nudity")
-            },
-            {
-                value: String(TimecodeTag.VIOLENCE),
-                title: i18n.t("violence")
-            },
-            {
-                value: String(TimecodeTag.SENSITIVE_EXPRESSIONS),
-                title: i18n.t("sensitiveExpressions")
-            }
-        ];
 
     // Array of fields for timecodes
     const { fields: segmentFields, append: appendSegment, remove: removeSegment } = useFieldArray({
@@ -166,8 +148,6 @@ export default function TimecodeEditor({ movie, onMessage, onLoading }: RootProp
     * Receives data from the form and sends it to the server
     */
     const onSubmit = async (values: z.infer<typeof formSchema>) => {
-        console.log("onSubmit");
-
         let isError: boolean = false;
         let isDurationError: boolean = false;
 
@@ -458,9 +438,10 @@ export default function TimecodeEditor({ movie, onMessage, onLoading }: RootProp
                                                             </SelectTrigger>
                                                         </FormControl>
                                                         <SelectContent>
-                                                            {tags.map((itmeField, index) => (
-                                                                <SelectItem key={index} value={itmeField.value}>{itmeField.title}</SelectItem>
-                                                            ))}
+                                                            <SelectItem value={String(TimecodeTag.NUDITY)}>{i18n.t("nudity")}</SelectItem>
+                                                            <SelectItem value={String(TimecodeTag.SEXUAL_CONTENT_WITHOUT_NUDITY)}>{i18n.t("sexualContentWithoutNudity")}</SelectItem>
+                                                            <SelectItem value={String(TimecodeTag.VIOLENCE)}>{i18n.t("violence")}</SelectItem>
+                                                            <SelectItem value={String(TimecodeTag.SENSITIVE_EXPRESSIONS)}>{i18n.t("sensitiveExpressions")}</SelectItem>
                                                         </SelectContent>
                                                     </Select>
                                                 )}
@@ -560,15 +541,19 @@ export default function TimecodeEditor({ movie, onMessage, onLoading }: RootProp
                         <AccordionContent className="space-y-3 text-balance">
                             <div>
                                 <p><b>{i18n.t("nudity")}</b></p>
-                                <p>{i18n.t("nudityDescription")}</p>
+                                <p className="text-muted font-medium">{i18n.t("nudityDescription")}</p>
+                            </div>
+                            <div>
+                                <p><b>{i18n.t("sexualContentWithoutNudity")}</b></p>
+                                <p className="text-muted font-medium">{i18n.t("sexualContentWithoutNudityDescription")}</p>
                             </div>
                             <div>
                                 <p><b>{i18n.t("violence")}</b></p>
-                                <p>{i18n.t("violenceDescription")}</p>
+                                <p className="text-muted font-medium">{i18n.t("violenceDescription")}</p>
                             </div>
                             <div>
                                 <p><b>{i18n.t("sensitiveExpressions")}</b></p>
-                                <p>{i18n.t("sensitiveExpressionsDescription")}</p>
+                                <p className="text-muted font-medium">{i18n.t("sensitiveExpressionsDescription")}</p>
                             </div>
                         </AccordionContent>
                     </AccordionItem>

@@ -15,7 +15,7 @@
   --primary-foreground: hsl(0, 0%, 0%);
   --secondary: hsl(0, 0%, 12%);
   --secondary-foreground: oklch(0.985 0 0);
-  --muted: oklch(70.251% 0.00008 271.152);
+  --muted: hsl(0, 0%, 60%);
   --muted-foreground: oklch(0.708 0 0);
   --accent: oklch(0.269 0 0);
   --accent-foreground: oklch(0.985 0 0);
@@ -90,7 +90,7 @@
 }
 
 @utility container {
-  padding: var(--container-padding);
+  padding-inline: var(--container-padding);
   margin-inline: auto;
 
   @variant sm {
@@ -104,12 +104,12 @@
 }
 
 .text-link {
-  @apply underline duration-300 text-blue-400 hover:text-blue-500;
+  @apply underline duration-300 text-foreground hover:text-muted cursor-pointer;
 }
 
 .description {
   @apply text-xs text-muted font-medium;
 }
 .text-h1 {
-  @apply text-4xl font-bold mb-8;
+  @apply text-4xl font-bold;
 }

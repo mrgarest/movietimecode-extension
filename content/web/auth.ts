@@ -40,8 +40,19 @@ const onMessage = async (event: any) => {
             id: data.id,
             roleId: data.role_id,
             username: data.username,
+            picture: data?.picture ?? undefined,
             accessToken: data.access_token,
             expiresAt: data.expires_at,
+            twitch:
+              data?.twitch &&
+              data?.twitch?.access_token &&
+              data?.twitch?.refresh_token
+                ? {
+                    accessToken: data.twitch.access_token,
+                    refreshToken: data.twitch.refresh_token,
+                    expiresAt: data.twitch?.expires_at,
+                  }
+                : null,
           } as TUser,
         },
         () => {

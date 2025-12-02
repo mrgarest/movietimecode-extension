@@ -2,6 +2,7 @@ export enum TimecodeTag {
   NUDITY = 100,
   VIOLENCE = 101,
   SENSITIVE_EXPRESSIONS = 102,
+  SEXUAL_CONTENT_WITHOUT_NUDITY = 103,
 }
 
 export enum TimecodeAction {

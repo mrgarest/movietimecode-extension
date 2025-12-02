@@ -11,14 +11,28 @@ import { renderQuestionDialog } from "./components/question-dialog";
 import i18n from "@/lib/i18n";
 import { playAlerSound } from "@/utils/alert";
 import { censorshipActionLog } from "@/utils/log";
+import ChatClient, { ChatMessage } from "@/lib/chat-client";
+import { TUser } from "@/types/user";
+import { getUser, isStreamLive, isTwitchTokenExpires, refreshTwitchToken } from "@/utils/auth";
+import { TChatbotCmmand } from "@/types/chatbot";
+import { ChatbotAccess, ChatbotAction } from "@/enums/chatbot";
+import { secondsToTime } from "@/utils/format";
+import { isPlayerVisible, playerInvisible, playerMute, playerPause, playerPlay, playerSeek, playerUnmute, playerVisible } from "@/utils/player";
 
 let isHotkeyPressed: boolean = false;
-let isMessageListener: boolean = false;
 let isCensorshipEnabled: boolean = false;
+let isChatConnected: boolean = false;
+let user: TUser | undefined = undefined;
 let settings: TSettings;
 let nudity: TimecodeAction;
 let violence: TimecodeAction;
 let sensitiveExpressions: TimecodeAction;
+let chatClient: ChatClient | undefined = undefined;
+let movie: {
+    title?: string
+    originalTitle?: string
+    year?: number
+} | undefined = undefined;
 
 let neededOBSClient: boolean = false;
 let obsClient: OBSClient | null = null;
@@ -30,6 +44,16 @@ let player: Thtml = undefined;
 
 let timecodeSegments: TSegment[] | null = null;
 let activeCensorshipActions: TSegment[] = [];
+
+let currentMovieTime: number = 0;
+
+// chatbot
+let hasStreamLive: boolean | undefined = undefined;
+let isTryRefreshTwitchToken: boolean = false;
+let isChatbotCommandStoped: boolean = false;
+let chatbotEnabled: boolean = false;
+let chatbotConnectStreamLive: boolean = false;
+let chatbotCommands: TChatbotCmmand[] = [];
 
 const playerContentCensorshipEnabled: { blur: boolean; hide: boolean; obsSceneChange: boolean } = {
     blur: false,
@@ -51,10 +75,13 @@ chrome.storage.onChanged.addListener((changes, namespace) => {
  * @returns Updated settings object.
  */
 const handleSettings = (settings: TSettings, isOnChanged: boolean) => {
-    nudity = (settings.nudity as TimecodeAction) || StorageDefault.nudity;
-    violence = (settings.violence as TimecodeAction) || StorageDefault.violence;
-    sensitiveExpressions = (settings.sensitiveExpressions as TimecodeAction) || StorageDefault.sensitiveExpressions;
 
+    nudity = (settings.nudity as TimecodeAction) ?? StorageDefault.nudity;
+
+    violence = (settings.violence as TimecodeAction) ?? StorageDefault.violence;
+    sensitiveExpressions = (settings.sensitiveExpressions as TimecodeAction) ?? StorageDefault.sensitiveExpressions;
+
+    // obs
     neededOBSClient = [nudity, violence, sensitiveExpressions].includes(TimecodeAction.obsSceneChange);
 
     if (!neededOBSClient && obsClient) {
@@ -62,6 +89,17 @@ const handleSettings = (settings: TSettings, isOnChanged: boolean) => {
         obsClient = null;
     } else if (isCensorshipEnabled && neededOBSClient && !obsClient) {
         connectOBS();
+    }
+
+    // chatbot
+    chatbotEnabled = (settings.chatbotEnabled as boolean) ?? StorageDefault.chatbotEnabled;
+    chatbotConnectStreamLive = (settings.chatbotConnectStreamLive as boolean) ?? StorageDefault.chatbotConnectStreamLive;
+    if (chatbotEnabled) {
+        chatbotCommands = ((settings.chatbotCommands as TChatbotCmmand[]) ?? StorageDefault.chatbotCommands)
+            .filter(cmd => cmd != null && cmd.command && cmd.action && cmd.access);
+
+    } else if (isChatConnected && chatClient) {
+        chatClient.disconnect();
     }
     return settings;
 };
@@ -72,7 +110,7 @@ const handleSettings = (settings: TSettings, isOnChanged: boolean) => {
 const uakino = {
     getPlayer: async (): Promise<HTMLIFrameElement | undefined> => {
         if (document.querySelector<HTMLDivElement>(".movie-right .players-section .playlists-ajax") == undefined) {
-            return document.querySelector<HTMLIFrameElement>('.movie-right .players-section iframe#pre') || undefined;
+            return document.querySelector<HTMLIFrameElement>('.movie-right .players-section iframe#pre') ?? undefined;
         }
         try {
             return await waitForElement<HTMLIFrameElement>('.movie-right .players-section .playlists-ajax iframe#playerfr');
@@ -81,8 +119,10 @@ const uakino = {
         }
     },
     getContainerForControlBar: (): HTMLDivElement | undefined =>
-        document.querySelector<HTMLDivElement>(".movie-right .players-section .box.full-text.visible") || undefined,
+        document.querySelector<HTMLDivElement>(".movie-right .players-section .box.full-text.visible") ?? undefined,
     getTitle: (): string | null =>
+        document.querySelector(".alltitle .solototle")?.textContent?.trim() ?? null,
+    getOriginalTitle: (): string | null =>
         document.querySelector(".alltitle .origintitle i")?.textContent?.trim() ?? null,
     getYear: (): number | null => {
         const match = document.body.innerHTML.match(/:\/\/[a-z0-9.-]+\.[a-z0-9]+\/find\/year\/(\d+)\//i);
@@ -97,6 +137,7 @@ const playerMap: Record<
         getPlayer: () => Promise<Thtml>;
         getContainerForControlBar: () => HTMLDivElement | undefined;
         getTitle: () => string | null;
+        getOriginalTitle: () => string | null;
         getYear: () => number | null;
     }
 > = {
@@ -117,6 +158,7 @@ const setHeadrStyles = () => {
 
 (async () => {
     await waitForDOMContentLoaded();
+    user = await getUser();
     const hostname = window.location.hostname;
     const site = playerMap[hostname];
     if (!site) {
@@ -132,9 +174,14 @@ const setHeadrStyles = () => {
     }
     const containerForControlBar = site.getContainerForControlBar();
 
-    let movieTitle: string | null = site.getTitle();
+    movie = {
+        title: site.getTitle() ?? undefined,
+        originalTitle: site.getOriginalTitle() ?? undefined,
+        year: site.getYear() ?? undefined
+    }
 
-    if (!player || !movieTitle || !containerForControlBar) return;
+    if (!player || !movie?.originalTitle || !containerForControlBar) return;
+
 
     /********************** SETTINGS START **********************/
     const storage = await chrome.storage.sync.get("settings");
@@ -150,12 +197,14 @@ const setHeadrStyles = () => {
     render(<ControlBar
         player={player}
         movie={{
-            title: movieTitle,
-            year: site.getYear()
+            title: movie.originalTitle,
+            year: movie.year
         }}
         onCensorship={handleCensorship}
         onTurnOffCensorship={handleTurnOffCensorship}
     />, rootControlBar);
+
+    window.addEventListener("message", handleMessage);
 })();
 
 
@@ -165,10 +214,6 @@ const setHeadrStyles = () => {
  * @param segments
  */
 function handleCensorship(segments: TSegment[] | null) {
-    if (!isMessageListener) {
-        window.addEventListener("message", handleMessage);
-        isMessageListener = true;
-    }
     timecodeSegments = segments;
     isCensorshipEnabled = true;
 
@@ -181,15 +226,150 @@ function handleCensorship(segments: TSegment[] | null) {
  * Handles turning off censorship by removing the player listener and resetting the timecode segments and active censorship actions.
  */
 function handleTurnOffCensorship() {
-    if (isMessageListener) {
-        window.removeEventListener("message", handleMessage);
-        isMessageListener = false;
-    }
     isCensorshipEnabled = false;
     timecodeSegments = null;
     activeCensorshipActions = [];
 
     obsClient?.disconnect();
+}
+
+/**
+ * Handles chatbot work
+ */
+async function handleChatbot() {
+    if (!chatbotEnabled
+        || isChatbotCommandStoped
+        || (chatbotConnectStreamLive && hasStreamLive == false)
+        || !player
+        || isChatConnected
+        || !user
+        || !user.twitch?.accessToken
+        || !user.twitch?.refreshToken
+    ) return;
+
+    // if necessary, we update the token
+    if (isTwitchTokenExpires(user)) {
+        if (isTryRefreshTwitchToken) {
+            return;
+        }
+        isTryRefreshTwitchToken = true;
+        const token = await refreshTwitchToken(user);
+        if (!token) {
+            if (config.debug) {
+                console.error('Failed to refresh token');
+            }
+            return;
+        };
+        user.twitch = token;
+        // In 1 hours, it will allow you to refresh the token again
+        setTimeout(() => {
+            isTryRefreshTwitchToken = false;
+        }, 1 * 60 * 60 * 1000);
+    }
+
+    // If necessary, check whether the streamer is live
+    if (chatbotConnectStreamLive) {
+        hasStreamLive = await isStreamLive(user);
+        if (!await isStreamLive(user)) {
+            if (config.debug) {
+                console.log('Stream not started');
+            }
+            return;
+        }
+    }
+
+    chatClient = new ChatClient({
+        username: user.username,
+        accessToken: user.twitch.accessToken!,
+    });
+    const isConnect = await chatClient.connect()
+
+    if (!isConnect) return;
+    isChatConnected = true;
+
+    chatClient.onMessage((msg: ChatMessage) => {
+        if (!player || !chatClient || !msg.message) return;
+        const message = msg.message.trim().toLocaleLowerCase();
+
+        // Search for the desired command
+        const command: TChatbotCmmand | undefined = chatbotCommands.find((cmd) => {
+            if (!cmd.enabled) return false;
+            return cmd.command.startsWith("!") ? message.startsWith(cmd.command) : message.includes(cmd.command);
+        });
+        if (!command) return;
+
+        // Checking permissions to execute commands
+        const isOwner = user && msg.user.username.toLocaleLowerCase() === user.username.toLocaleLowerCase();
+        switch (command.access) {
+            case ChatbotAccess.onlyMe:
+                if (!isOwner) return;
+                break;
+
+            case ChatbotAccess.moderators:
+                if (!isOwner && !msg.user.mod) return;
+                break;
+
+            case ChatbotAccess.vip:
+                if (!isOwner && !msg.user.vip) return;
+                break;
+        }
+
+        // Command processing
+        switch (command.action) {
+            case ChatbotAction.stop:
+                chatClient.disconnect();
+                isChatbotCommandStoped = true;
+                return;
+            case ChatbotAction.play:
+                playerPlay(player);
+                return;
+            case ChatbotAction.pause:
+                playerPause(player);
+                return;
+            case ChatbotAction.mute:
+                playerMute(player);
+                return;
+            case ChatbotAction.unmute:
+                playerUnmute(player);
+                return;
+            case ChatbotAction.blur:
+                setPlayerBlur(true);
+                return;
+            case ChatbotAction.unblur:
+                setPlayerBlur(false);
+                return;
+            case ChatbotAction.hidePlayer:
+                console.log("hidePlayer");
+                playerInvisible(player);
+                return;
+            case ChatbotAction.showPlayer:
+                playerVisible(player);
+                return;
+            case ChatbotAction.fastForwardRewind:
+                const regex = new RegExp(`${command.command}\\s+(-?\\d+)`);
+                const match = message.match(regex);
+                if (!match) return;
+                playerSeek(player, currentMovieTime + (Number(match[1]) ?? 0));
+                return;
+            case ChatbotAction.currentMovieTime:
+                if (currentMovieTime == 0) return;
+                chatClient.sendTagging(msg.user.username, i18n.t('movieIsPlayingValue', { value: secondsToTime(currentMovieTime) }));
+                return;
+            case ChatbotAction.movieTitle:
+                let title: string;
+                if (movie?.title) title = movie.title;
+                else if (movie?.originalTitle) title = movie.originalTitle;
+                else return;
+                chatClient.sendTagging(msg.user.username, title + (movie.year ? ` (${movie.year})` : ''));
+                return;
+        }
+    });
+    chatClient.onClose(() => {
+        isChatConnected = false;
+    });
+    chatClient.onError((msg: any) => {
+        isChatConnected = false;
+    });
 }
 
 /**
@@ -200,13 +380,15 @@ function handleMessage(e: MessageEvent) {
     if (e.data.event === undefined) return;
     switch (e.data.event) {
         case "time":
-            handleTimePlayer(parseInt(e.data.time || "0"));
+            currentMovieTime = parseInt(e.data.time || "0");
+            handleTimePlayer(currentMovieTime);
             break;
         case "fullscreen":
             break;
         case "exitfullscreen":
             break;
         case "play":
+            handleChatbot();
             break;
         case "volume":
             break;
@@ -384,19 +566,18 @@ async function setPlayerCensorshipAction({
             break;
         case TimecodeAction.hide:
             if (playerContentCensorshipEnabled.hide) return;
-            player.classList.toggle("mt-opacity-0", isCensored);
+            isCensored ? playerInvisible(player) : playerVisible(player);
             break;
         case TimecodeAction.mute:
-            player.contentWindow?.postMessage({ api: isCensored ? "mute" : "unmute" }, "*");
+            isCensored ? playerMute(player) : playerUnmute(player);
             break;
         case TimecodeAction.pause:
             if (!isCensored) break;
-            player.contentWindow?.postMessage({ api: "pause" }, "*");
+            playerPause(player);
             playAlerSound();
             break;
         case TimecodeAction.skip:
-            if (isCensored && segment.end_time)
-                player.contentWindow?.postMessage({ api: "seek", set: segment.end_time + 1 }, "*");
+            if (isCensored && segment.end_time) playerSeek(player, segment.end_time + 1);
             break;
         case TimecodeAction.obsSceneChange:
             if (playerContentCensorshipEnabled.obsSceneChange) return;
@@ -517,7 +698,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
  * Handling hotkeys.
  */
 async function heandleHotkey(command: string) {
-    if (!player || command !== "censoring-player-content") return;
+    if (!player || command !== "censoring-player-content" || isHotkeyPressed) return;
     const playerContentCensorshipCommand = (settings.playerContentCensorshipCommand as TimecodeAction) || StorageDefault.playerContentCensorshipCommand;
     isHotkeyPressed = true;
     switch (playerContentCensorshipCommand) {
@@ -531,8 +712,8 @@ async function heandleHotkey(command: string) {
             setPlayerBlur(playerContentCensorshipEnabled.blur);
             break;
         case TimecodeAction.hide:
-            playerContentCensorshipEnabled.hide = player.classList.contains("mt-opacity-0") ? false : !playerContentCensorshipEnabled.hide;
-            player.classList.toggle("mt-opacity-0", playerContentCensorshipEnabled.hide);
+            playerContentCensorshipEnabled.hide = !isPlayerVisible(player) ? false : !playerContentCensorshipEnabled.hide;
+            playerContentCensorshipEnabled.hide ? playerInvisible(player) : playerVisible(player);
             break;
         case TimecodeAction.obsSceneChange:
             try {
@@ -541,7 +722,7 @@ async function heandleHotkey(command: string) {
                 }
 
                 if (!obsClient || !obsCensorScene) {
-                    player.contentWindow?.postMessage({ api: "pause" }, "*");
+                    playerPause(player);
                     playerContentCensorshipEnabled.obsSceneChange = false;
                     break;
                 }
@@ -574,4 +755,66 @@ async function heandleHotkey(command: string) {
             break;
     }
     isHotkeyPressed = false;
+}
+
+/**
+ * Sets forced censorship for the player
+ * 
+ * @param action - TimecodeAction
+ */
+async function setForcedActionPlayer(action: TimecodeAction): Promise<void> {
+    if (!player) return;
+    switch (action) {
+        case TimecodeAction.blur:
+            playerContentCensorshipEnabled.blur = [
+                "light",
+                "strong",
+                "max",
+                "base"
+            ].some(cls => player!.classList.contains("mt-player-blur-" + cls)) ? false : !playerContentCensorshipEnabled.blur;
+            setPlayerBlur(playerContentCensorshipEnabled.blur);
+            break;
+        case TimecodeAction.hide:
+            playerContentCensorshipEnabled.hide = !isPlayerVisible(player) ? false : !playerContentCensorshipEnabled.hide;
+            playerContentCensorshipEnabled.hide ? playerInvisible(player) : playerVisible(player);
+            break;
+        case TimecodeAction.obsSceneChange:
+            try {
+                if (!obsClient) {
+                    await connectOBS();
+                }
+
+                if (!obsClient || !obsCensorScene) {
+                    playerPause(player);
+                    playerContentCensorshipEnabled.obsSceneChange = false;
+                    break;
+                }
+
+                const scene = await obsClient.getActiveScene();
+                if (!scene) {
+                    playerContentCensorshipEnabled.obsSceneChange = false;
+                    break;
+                }
+
+                if (scene.id !== obsCensorScene.id) {
+                    mainSceneOBS = scene;
+                    playerContentCensorshipEnabled.obsSceneChange = true;
+                    await obsClient.setActiveScene(obsCensorScene);
+                    break;
+                }
+
+                if (mainSceneOBS && mainSceneOBS.id !== obsCensorScene.id) {
+                    await obsClient.setActiveScene(mainSceneOBS);
+                    playerContentCensorshipEnabled.obsSceneChange = false;
+                    break;
+                }
+            } catch (error) {
+                if (config.debug) {
+                    console.error("Hotkey obs error:", error);
+                }
+            }
+            break;
+        default:
+            break;
+    }
 }

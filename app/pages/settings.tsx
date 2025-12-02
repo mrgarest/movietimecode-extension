@@ -13,6 +13,7 @@ export default function Settings() {
     const [timeBuffer, setTimeBuffer] = useState<number>(StorageDefault.timeBuffer);
     const [blurPower, setBlurPower] = useState<BlurPower>(StorageDefault.blurPower);
     const [nudity, setNudity] = useState<TimecodeAction>(StorageDefault.nudity);
+    const [sexualContentWithoutNudity, setSexualContentWithoutNudity] = useState<TimecodeAction>(StorageDefault.sexualContentWithoutNudity);
     const [violence, setViolence] = useState<TimecodeAction>(StorageDefault.violence);
     const [sensitiveExpressions, setSensitiveExpressions] = useState<TimecodeAction>(StorageDefault.sensitiveExpressions);
 
@@ -20,11 +21,12 @@ export default function Settings() {
         if (chrome?.storage?.sync) {
             chrome.storage.sync.get('settings', (result) => {
                 const curentSettings: TSettings = result.settings ?? {};
-                curentSettings.timeBuffer = curentSettings.timeBuffer as number ?? StorageDefault.timeBuffer
-                curentSettings.blurPower = curentSettings.blurPower as BlurPower ?? StorageDefault.blurPower
-                curentSettings.nudity = curentSettings.nudity as TimecodeAction ?? StorageDefault.nudity
-                curentSettings.violence = curentSettings.violence as TimecodeAction ?? StorageDefault.violence
-                curentSettings.sensitiveExpressions = curentSettings.sensitiveExpressions as TimecodeAction ?? StorageDefault.sensitiveExpressions
+                curentSettings.timeBuffer = curentSettings.timeBuffer as number ?? StorageDefault.timeBuffer;
+                curentSettings.blurPower = curentSettings.blurPower as BlurPower ?? StorageDefault.blurPower;
+                curentSettings.nudity = curentSettings.nudity as TimecodeAction ?? StorageDefault.nudity;
+                curentSettings.sexualContentWithoutNudity = curentSettings.sexualContentWithoutNudity as TimecodeAction ?? StorageDefault.sexualContentWithoutNudity;
+                curentSettings.violence = curentSettings.violence as TimecodeAction ?? StorageDefault.violence;
+                curentSettings.sensitiveExpressions = curentSettings.sensitiveExpressions as TimecodeAction ?? StorageDefault.sensitiveExpressions;
 
                 setSettings(curentSettings);
 
@@ -62,6 +64,12 @@ export default function Settings() {
         const n = Number(value);
         setNudity(n);
         updateSettings({ nudity: n as TimecodeAction });
+    };
+
+    const handleSexualContentWithoutNudity = (value: string) => {
+        const n = Number(value);
+        setSexualContentWithoutNudity(n);
+        updateSettings({ sexualContentWithoutNudity: n as TimecodeAction });
     };
 
     const handleViolence = (value: string) => {
@@ -132,6 +140,24 @@ export default function Settings() {
                         onValueChange={handleNudity}
                         defaultValue={nudity.toString()}
                         value={nudity.toString()}>
+                        <SelectTrigger className="w-44">
+                            <SelectValue placeholder={i18n.t("selectBehavior")} />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectGroup>
+                                {selectItemBehavior.map((item, index) => <SelectItem key={index} disabled={item.disabled} value={item.value.toString()}>{item.text}</SelectItem>)}
+                            </SelectGroup>
+                        </SelectContent>
+                    </Select>
+                </SettingsCard>
+                <hr />
+                <SettingsCard
+                    title={i18n.t("sexualContentWithoutNudity")}
+                    description={i18n.t("sexualContentWithoutNudityDescription")}>
+                    <Select
+                        onValueChange={handleSexualContentWithoutNudity}
+                        defaultValue={sexualContentWithoutNudity.toString()}
+                        value={sexualContentWithoutNudity.toString()}>
                         <SelectTrigger className="w-44">
                             <SelectValue placeholder={i18n.t("selectBehavior")} />
                         </SelectTrigger>

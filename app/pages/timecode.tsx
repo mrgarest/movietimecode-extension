@@ -7,7 +7,7 @@ import { Button } from "@/app/components/ui/button";
 import { logIn } from "@/utils/navigation";
 import { cn } from "@/lib/utils";
 import { TMovieSearchItem } from "@/types/movie";
-import { ExtensionDetails } from "@/app/components/extension-details";
+import { Footer } from "@/app/components/footer";
 import { getUser } from "@/utils/auth";
 import TimecodeEditor from "@/app/components/timecode/timecode-editor";
 import SearchMovie from "@/app/components/timecode/search-movie";
@@ -95,7 +95,7 @@ export default function TimecodePage() {
                     onMessage={setFinalMessage}
                     onLoading={setLoading} />
                 }
-                <ExtensionDetails />
+                <Footer />
             </div>
             {isLoading && <div className={cn("fixed top-0 left-0 right-0 bottom-0 z-50 flex items-center justify-center pointer-events-auto overflow-hidden", !isHideContent && "bg-black/50")}>
                 <div role="status">
