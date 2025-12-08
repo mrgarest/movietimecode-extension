@@ -62,6 +62,6 @@ export default function getManifest() {
       service_worker: "assets/background.js",
       type: "module",
     },
-    permissions: ["scripting", "storage", "tabs"],
+    permissions: ["storage", "tabs"],
   } as Manifest.WebExtensionManifest;
 }
