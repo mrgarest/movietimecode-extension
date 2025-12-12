@@ -1,0 +1,12 @@
+User-Agent: *
+Allow: /
+Disallow: /privacy
+Disallow: /images/
+Disallow: /auth/
+Disallow: *?fbclid=
+Disallow: *?ref=
+Disallow: *?from=
+Disallow: *#
+
+Host: https://movietimecode.mrgarest.com
+Sitemap: https://movietimecode.mrgarest.com/sitemap.xml

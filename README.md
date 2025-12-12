@@ -24,4 +24,3 @@
 - Розширення в [Chrome Web Store](https://chromewebstore.google.com/detail/movie-timecode/oicfghfgplgplodmidellkbfoachacjb).
 - [Telegram канал з таймкодами](https://t.me/+B-6MNbF-t6cyZDVi).
 - [Політика конфіденційності](https://movietimecode.mrgarest.com/privacy).
-- Серверна частина на [Github](https://github.com/mrgarest/movietimecode-server).

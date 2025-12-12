@@ -1,18 +1,19 @@
+node_modules
+.env
+.env.backup
+.env.production
+*.local
+
 # Logs
 logs
 *.log
+
+# debug
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
-pnpm-debug.log*
+.pnpm-debug.log*
 lerna-debug.log*
-
-node_modules
-dist
-dist-ssr
-config.json
-.env
-*.local
 
 # Editor directories and files
 .vscode/*
@@ -24,3 +25,23 @@ config.json
 *.njsproj
 *.sln
 *.sw?
+*.pem
+
+# Extension
+/extension/dist
+/extension/config.json
+
+# Server
+/server/.phpunit.cache
+/server/app/Console/Commands/Test.php
+/server/public/build
+/server/public/hot
+/server/public/storage
+/server/public/google*
+/server/storage/*.key
+/server/storage/pail
+/server/vendor
+/server/.vagrant
+/server/.phpactor.json
+/server/.phpunit.result.cache
+/server/auth.json
