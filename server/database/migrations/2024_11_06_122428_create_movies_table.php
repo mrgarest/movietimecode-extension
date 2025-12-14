@@ -17,10 +17,10 @@ return new class extends Migration
             $table->unsignedSmallInteger('storage_id')->nullable();
             $table->unsignedSmallInteger('duration')->nullable();
             $table->string('lang_code')->nullable();
-            $table->string('title');
+            $table->string('title')->index();
             $table->string('poster_path', 2083)->nullable();
             $table->string('backdrop_path', 2083)->nullable();
-            $table->date('release_date');
+            $table->date('release_date')->index();
             $table->float('rating_imdb')->nullable();
             $table->timestamps();
         });
@@ -30,10 +30,12 @@ return new class extends Migration
             $table->foreignIdFor(Movie::class)->constrained()->cascadeOnDelete();
             $table->unsignedSmallInteger('storage_id')->nullable();
             $table->string('lang_code', 5);
-            $table->string('title')->nullable();
+            $table->string('title')->index()->nullable();
             $table->string('poster_path', 2083)->nullable();
             $table->string('backdrop_path', 2083)->nullable();
             $table->timestamps();
+
+            $table->index(['movie_id', 'lang_code']);
         });
     }
 

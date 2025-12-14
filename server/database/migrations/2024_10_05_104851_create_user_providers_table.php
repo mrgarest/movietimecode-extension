@@ -19,6 +19,8 @@ return new class extends Migration
             $table->string('account_id', 100);
             $table->string('name')->nullable();
             $table->timestamps();
+
+            $table->unique(['provider', 'account_id']);
         });
     }
 

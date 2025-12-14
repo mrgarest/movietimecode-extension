@@ -17,11 +17,10 @@ return new class extends Migration
             $table->foreignIdFor(User::class)->constrained()->cascadeOnDelete();
             $table->string('token');
             $table->json('payload')->nullable();
-            $table->timestamp('expires_at')->nullable();
+            $table->timestamp('expires_at')->index()->nullable();
             $table->timestamps();
 
             $table->index(['user_id', 'token']);
-            $table->unique(['user_id', 'token']);
         });
     }
 

@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Builder;
 
 class MovieTimecodeSegment extends Model
 {
@@ -19,8 +20,8 @@ class MovieTimecodeSegment extends Model
         'description'
     ];
 
-    public static function findByTimecodeId($timecodeId)
+    public function scopeTimecodeId(Builder $query, $id): Builder
     {
-        return self::where('timecode_id', $timecodeId)->orderBy('start_time');
+        return $query->where('timecode_id', $id);
     }
 }

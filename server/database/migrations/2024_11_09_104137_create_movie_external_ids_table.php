@@ -18,6 +18,8 @@ return new class extends Migration
             $table->bigInteger('external_id');
             $table->string('value');
             $table->timestamps();
+
+            $table->index(['external_id', 'value']);
         });
     }
 

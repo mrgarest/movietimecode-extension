@@ -129,7 +129,7 @@ class MovieController extends Controller
                 }]);
             },
             'externalIds' => function ($query) {
-                $query->where('external_id', EnumsMovieExternalId::IMDB->value);
+                $query->externalId(EnumsMovieExternalId::IMDB->value);
             },
             'imdbContentRatings'
         ];

@@ -411,7 +411,7 @@ class TimecodeController extends Controller
 
         if ($data == null) {
             $movieTimecodeSegments = MovieTimecodeSegment::select('id', 'timecode_id', 'tag_id', 'action_id', 'start_time', 'end_time')
-                ->where('timecode_id', $timecodeId)
+                ->timecodeId($timecodeId)
                 ->orderBy('start_time')
                 ->get();
 

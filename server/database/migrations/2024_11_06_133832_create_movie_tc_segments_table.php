@@ -25,6 +25,8 @@ return new class extends Migration
             $table->unsignedSmallInteger('end_time');
             $table->string('description')->nullable();
             $table->timestamps();
+
+            $table->index(['timecode_id', 'start_time']);
         });
     }
 
