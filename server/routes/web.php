@@ -12,4 +12,4 @@ Route::prefix('auth')->controller(AuthController::class)->group(function () {
     Route::get('/callback/twitch', 'callback');
 });
 
-Route::get('/{any}', [AppController::class, 'index'])->where('any', '.*');
+Route::get('/{path?}', [AppController::class, 'index']);
