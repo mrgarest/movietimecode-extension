@@ -17,7 +17,22 @@ class MovieTimecodeSegment extends Model
         'action_id',
         'start_time',
         'end_time',
-        'description'
+        'description',
+        'created_at',
+        'updated_at',
+    ];
+
+    protected $casts = [
+        'user_id' => 'int',
+        'movie_id' => 'int',
+        'timecode_id' => 'int',
+        'tag_id' => 'int',
+        'action_id' => 'int',
+        'start_time' => 'int',
+        'end_time' => 'int',
+        'description' => 'string',
+        'created_at' => 'datetime',
+        'updated_at' => 'datetime',
     ];
 
     public function scopeTimecodeId(Builder $query, $id): Builder

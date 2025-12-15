@@ -13,12 +13,16 @@ class ExpansionAuth extends Model
         'payload',
         'expires_at',
         'created_at',
-        'updated_at'
+        'updated_at',
     ];
 
     protected $casts = [
+        'user_id' => 'int',
+        'token' => 'string',
         'payload' => 'array',
         'expires_at' => 'datetime',
+        'created_at' => 'datetime',
+        'updated_at' => 'datetime',
     ];
 
     public function user()

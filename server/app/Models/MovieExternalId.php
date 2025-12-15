@@ -15,6 +15,15 @@ class MovieExternalId extends Model
         'external_id',
         'value'
     ];
+
+    protected $casts = [
+        'movie_id' => 'int',
+        'external_id' => 'int', 
+        'value' => 'string',
+        'created_at' => 'datetime',
+        'updated_at' => 'datetime',
+    ];
+
     public function movie()
     {
         return $this->belongsTo(Movie::class);

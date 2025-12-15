@@ -17,10 +17,21 @@ class Movie extends Model
         'backdrop_path',
         'rating_imdb',
         'release_date',
+        'created_at',
+        'updated_at',
     ];
 
     protected $casts = [
-        'release_date' => 'datetime',
+        'storage_id' => 'int',
+        'duration' => 'int',
+        'lang_code' => 'string',
+        'title' => 'string',
+        'poster_path' => 'string',
+        'backdrop_path' => 'string',
+        'release_date' => 'date',
+        'rating_imdb' => 'float',
+        'created_at' => 'datetime',
+        'updated_at' => 'datetime',
     ];
 
     public function imdbContentRatings()

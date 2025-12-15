@@ -9,7 +9,7 @@ use Illuminate\Database\Eloquent\Builder;
 class MovieTimecode extends Model
 {
     use HasFactory;
-    protected $table = 'movie_tсs';
+    protected $table = 'movie_tcs';
 
     protected $fillable = [
         'user_id',
@@ -18,8 +18,21 @@ class MovieTimecode extends Model
         'like_count',
         'dislike_count',
         'used_count',
+        'created_at',
+        'updated_at',
     ];
 
+    protected $casts = [
+        'user_id' => 'int',
+        'movie_id' => 'int',
+        'duration' => 'int',
+        'like_count' => 'int',
+        'dislike_count' => 'int',
+        'used_count' => 'int',
+        'created_at' => 'datetime',
+        'updated_at' => 'datetime',
+    ];
+    
     public function user()
     {
         return $this->belongsTo(User::class);

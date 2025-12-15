@@ -14,11 +14,22 @@ return new class extends Migration
      */
     public function up(): void
     {
+         Schema::create('movie_tcs', function (Blueprint $table) {
+            $table->id()->from(1000);
+            $table->foreignIdFor(User::class)->nullable()->constrained()->nullOnDelete();
+            $table->foreignIdFor(Movie::class)->constrained()->cascadeOnDelete();
+            $table->unsignedSmallInteger('duration')->nullable();
+            $table->unsignedBigInteger('like_count')->default(0);
+            $table->unsignedBigInteger('dislike_count')->default(0);
+            $table->unsignedBigInteger('used_count')->default(0);
+            $table->timestamps();
+        });
+        
         Schema::create('movie_tc_segments', function (Blueprint $table) {
             $table->id()->from(1000);
             $table->foreignIdFor(User::class)->nullable()->constrained()->nullOnDelete();
             $table->foreignIdFor(Movie::class)->constrained()->cascadeOnDelete();
-            $table->foreignIdFor(MovieTimecode::class, 'timecode_id')->constrained('movie_tсs')->cascadeOnDelete();
+            $table->foreignIdFor(MovieTimecode::class, 'timecode_id')->constrained('movie_tcs')->cascadeOnDelete();
             $table->unsignedSmallInteger('tag_id');
             $table->unsignedSmallInteger('action_id')->nullable();
             $table->unsignedSmallInteger('start_time');

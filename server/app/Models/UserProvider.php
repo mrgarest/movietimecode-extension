@@ -13,7 +13,16 @@ class UserProvider extends Model
         'name',
         'expires_at',
         'created_at',
-        'updated_at'
+        'updated_at',
+    ];
+
+    protected $casts = [
+        'user_id' => 'int',
+        'provider' => 'string',
+        'account_id' => 'string',
+        'name' => 'string',
+        'created_at' => 'datetime',
+        'updated_at' => 'datetime',
     ];
     
     public function user()

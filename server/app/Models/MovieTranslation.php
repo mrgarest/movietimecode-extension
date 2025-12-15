@@ -12,6 +12,19 @@ class MovieTranslation extends Model
         'lang_code',
         'title',
         'poster_path',
-        'backdrop_path'
+        'backdrop_path',
+        'created_at',
+        'updated_at',
+    ];
+
+    protected $casts = [
+        'movie_id' => 'int',
+        'storage_id' => 'int',
+        'lang_code' => 'string',
+        'title' => 'string',
+        'poster_path' => 'string',
+        'backdrop_path' => 'string',
+        'created_at' => 'datetime',
+        'updated_at' => 'datetime',
     ];
 }
