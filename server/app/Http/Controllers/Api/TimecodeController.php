@@ -326,7 +326,6 @@ class TimecodeController extends Controller
         $cacheKey = "search_timecode_{$langCode}." . md5($title) . ($year ? "_{$year}" : '');
         $cacheData = Cache::get($cacheKey, null);
         if ($cacheData !== null) return EchoApi::success($cacheData);
-
         $select = ['id', 'storage_id', 'title', 'poster_path'];
         $movie = Movie::select(array_map(function ($item) {
             return 'movies.' . $item;
@@ -334,10 +333,9 @@ class TimecodeController extends Controller
             ->leftJoin('movie_translations', 'movie_translations.movie_id', '=', 'movies.id')
             ->where(function ($q) use ($titles) {
                 foreach ($titles as $t) {
-                    if (!empty($t)) {
-                        $q->orWhere('movies.title', 'like', $t)
-                            ->orWhere('movie_translations.title', 'like', $t);
-                    }
+                    $t = trim($t);
+                    $q->orWhere('movies.title', 'ILIKE', "%{$t}%")
+                        ->orWhere('movie_translations.title', 'ILIKE', "%{$t}%");
                 }
             })->when($year, function ($query, $year) {
                 $start = ($year - 1) . '-01-01';

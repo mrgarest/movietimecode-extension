@@ -65,7 +65,7 @@ class Movie extends Model
 
     public static function findByTitle($title)
     {
-        return self::where('title', 'like', "%$title%");
+        return self::where('title', 'ILIKE', "%$title%");
     }
 
     public static function findWithTranslation($id, $langCode, array $select = [['*'], ['*']])
