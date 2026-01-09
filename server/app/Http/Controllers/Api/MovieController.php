@@ -65,7 +65,6 @@ class MovieController extends Controller
      * Movie check.
      */
     public function check(
-        Request $request,
         int $movieId,
         MovieService $movieService,
         CompanyService $companyService,
@@ -84,8 +83,8 @@ class MovieController extends Controller
         return new MovieCheckResource([
             'tmdb_id' => (int) $movieId,
             'movie' => $movie,
-            'productions' => $companies->where('role', MovieCompanyRole::PRODUCTION),
-            'distributors' => $companies->where('role', MovieCompanyRole::DISTRIBUTOR),
+            'productions' => $companies->where('role', MovieCompanyRole::PRODUCTION)->values(),
+            'distributors' => $companies->where('role', MovieCompanyRole::DISTRIBUTOR)->values(),
             'imdb' => [
                 'id' => $imdbService->getImdbId($movie),
                 'content_ratings' => $imdbService->getContentRatings($movie)
