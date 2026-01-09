@@ -5,6 +5,7 @@ import { getPageData } from './utils/json-page-data';
 import { useTranslation } from 'react-i18next';
 import { Spinner } from './components/ui/spinner';
 import BackgroundGradient from './components/BackgroundGradient';
+import { isValidValue } from './utils/helpers';
 
 const App = () => {
     const { t } = useTranslation();
@@ -15,16 +16,20 @@ const App = () => {
         const pageData = getPageData();
         window.history.replaceState(null, '', window.location.href.split('?')[0]);
 
-        if (pageData?.error) {
-            setText(t(pageData.error));
+        if (!pageData?.success) {
+            setText(t(pageData.langKey));
             setSpinner(false);
             return;
         }
-        if (pageData?.auth === undefined) {
+
+        if (!isValidValue(pageData?.id) || !isValidValue(pageData?.token) || !isValidValue(pageData?.target)) {
             setText(t("auth.dataMissing"));
             setSpinner(false);
             return;
         }
+
+        // Define the source for postMessage communication
+        const SOURCE = 'auth:' + pageData.target;
 
         /**
          * Handles incoming postMessage events.
@@ -32,7 +37,7 @@ const App = () => {
          * @param {MessageEvent} event - The message event object.
          */
         const onMessage = (event: MessageEvent) => {
-            if (event.data?.source !== "auth") return;
+            if (event.data?.source !== SOURCE || event.data?.source !== "auth") return;
             switch (event.data?.type) {
                 case "success":
                     setText(t('auth.completedSuccessfully'));
@@ -47,12 +52,30 @@ const App = () => {
             }
         };
 
+        // Post the authentication data to the window after a short delay
+        setTimeout(() => window.postMessage({
+            source: SOURCE,
+            auth: {
+                id: pageData.id,
+                token: pageData.token
+            }
+        }, '*'), 800);
+
+        /**
+         * @deprecated Old method of posting message
+         */
         setTimeout(() => window.postMessage({
             source: 'auth',
-            auth: pageData.auth
-        }, '*'), 800);
+            auth: {
+                id: pageData.id,
+                token: pageData.token
+            }
+        }, '*'), 1000);
+
+        // Timeout for authentication process
         setTimeout(() => setText(t("auth.timeout")), 180000);
 
+        // Listen for messages from the window
         window.addEventListener("message", onMessage);
 
         return () => {

@@ -17,16 +17,6 @@ class AuthController extends Controller
 
     public function callback()
     {
-        $data = $this->authService->callback();
-
-        // Outdated authorization method
-        $oldLoginData = $data->success ? ['auth' => [
-            'id' => $data->id,
-            'token' => $data->token,
-        ]] : ['error' => $data->langKey];
-
-        return view('auth', [
-            'jsonPageData' => array_merge($data->toArray(), $oldLoginData)
-        ]);
+        return view('auth', ['jsonPageData' => $this->authService->callback()->toArray()]);
     }
 }
