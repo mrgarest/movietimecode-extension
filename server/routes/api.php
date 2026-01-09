@@ -61,7 +61,7 @@ Route::prefix('v2')->group(function () {
 
             Route::prefix('timecodes')->controller(TimecodeController::class)->group(function () {
                 Route::middleware(['auth:api', 'not_deactivated', 'scopes:extension'])->group(function () {
-                    Route::post('/new', 'new');
+                    Route::post('/editor/new', 'new');
                 });
                 Route::get('/authors', 'authors');
             });
