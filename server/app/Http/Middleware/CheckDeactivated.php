@@ -21,7 +21,7 @@ class CheckDeactivated
     {
         $user = $request->user();
 
-        if ($user) throw ApiException::accessTokenInvalid();
+        if (!$user) throw ApiException::accessTokenInvalid();
 
         if ($user->deactivated_at !== null) throw ApiException::userDeactivated();
 
