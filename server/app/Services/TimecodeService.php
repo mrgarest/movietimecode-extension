@@ -51,26 +51,25 @@ class TimecodeService
     public function getTimecodes(int $timecodeId): ?TimecodeData
     {
         $data = Cache::remember(TimecodeCacheKey::timecodes($timecodeId), now()->addMinutes(10), function () use ($timecodeId) {
-            $segments = MovieTimecodeSegment::timecodeId($timecodeId)
-                ->orderBy('start_time')
-                ->get(['id', 'tag_id', 'action_id', 'start_time', 'end_time']);
+            $timecode = MovieTimecode::with(['segments' => function ($query) {
+                $query->orderBy('start_time');
+            }])->find($timecodeId);
 
-            if ($segments->isEmpty()) {
+            if (!$timecode) {
                 return null;
             }
-
-            $segment = $segments->first();
+            
             return [
-                'movie_id' => $segment->movie_id,
-                'timecode_id' => $segment->timecode_id,
-                'segments' => $segments->map(fn($s) => TimecodeSegmentData::toArrayFromModel($s))
+                'id' => $timecode->id,
+                'movie_id' => $timecode->movie_id,
+                'segments' => $timecode->segments->map(fn($s) => TimecodeSegmentData::toArrayFromModel($s))->toArray()
             ];
         });
 
         if (!isset($data['segments'])) return null;
 
         return new TimecodeData(
-            id: $data['timecode_id'],
+            id: $data['id'],
             movieId: $data['movie_id'],
             segments: collect($data['segments'])->map(fn($s) => TimecodeSegmentData::fromArray($s))
         );
