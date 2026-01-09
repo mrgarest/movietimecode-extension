@@ -7,6 +7,9 @@ import { Spinner } from './components/ui/spinner';
 import BackgroundGradient from './components/BackgroundGradient';
 import { isValidValue } from './utils/helpers';
 
+// Source identifier for authentication messages
+const SOURCE_BASE = 'movietimecode:';
+
 const App = () => {
     const { t } = useTranslation();
     const [text, setText] = useState<string | undefined>(undefined);
@@ -17,7 +20,7 @@ const App = () => {
         window.history.replaceState(null, '', window.location.href.split('?')[0]);
 
         if (!pageData?.success) {
-            setText(t(pageData.langKey));
+            setText(t(pageData.lang_key));
             setSpinner(false);
             return;
         }
@@ -28,16 +31,13 @@ const App = () => {
             return;
         }
 
-        // Define the source for postMessage communication
-        const SOURCE = 'auth:' + pageData.target;
-
         /**
          * Handles incoming postMessage events.
          * If the message is from the "auth" source, displays a success message.
          * @param {MessageEvent} event - The message event object.
          */
         const onMessage = (event: MessageEvent) => {
-            if (event.data?.source !== SOURCE || event.data?.source !== "auth") return;
+            if (event.data?.source !== SOURCE_BASE + pageData.target) return;
             switch (event.data?.type) {
                 case "success":
                     setText(t('auth.completedSuccessfully'));
@@ -54,23 +54,12 @@ const App = () => {
 
         // Post the authentication data to the window after a short delay
         setTimeout(() => window.postMessage({
-            source: SOURCE,
+            source: SOURCE_BASE + "server",
             auth: {
                 id: pageData.id,
                 token: pageData.token
             }
         }, '*'), 800);
-
-        /**
-         * @deprecated Old method of posting message
-         */
-        setTimeout(() => window.postMessage({
-            source: 'auth',
-            auth: {
-                id: pageData.id,
-                token: pageData.token
-            }
-        }, '*'), 1000);
 
         // Timeout for authentication process
         setTimeout(() => setText(t("auth.timeout")), 180000);
