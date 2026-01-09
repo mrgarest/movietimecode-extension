@@ -12,8 +12,8 @@ class TimecodeCacheKey
         return  self::ROT . 'authors.' . $movieId;
     }
 
-    public static function segments(int $movieId, int $timecodeId): string
+    public static function timecodes(int $timecodeId): string
     {
-        return  self::ROT . 'segments.' . $movieId . '.' . $timecodeId;
+        return  self::ROT . $timecodeId;
     }
 }

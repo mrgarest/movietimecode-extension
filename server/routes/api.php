@@ -64,12 +64,12 @@ Route::prefix('v2')->group(function () {
                     Route::post('/new', 'new');
                 });
                 Route::get('/authors', 'authors');
-                Route::get('/{timecodeId}', 'timecodes');
             });
         });
     });
 
     Route::prefix('timecodes/{timecodeId}')->controller(TimecodeController::class)->group(function () {
+        Route::get('/', 'timecodes');
         Route::middleware(['auth:api', 'not_deactivated', 'scopes:extension'])->group(function () {
             Route::prefix('editor')->group(function () {
                 Route::get('/', 'editor');

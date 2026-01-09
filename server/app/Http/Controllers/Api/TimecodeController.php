@@ -45,9 +45,9 @@ class TimecodeController extends Controller
     /**
      * Get timecodes for a movie from a specific author.
      */
-    public function timecodes(int $movieId, int $timecodeId)
+    public function timecodes(int $timecodeId)
     {
-        $data = $this->timecodeService->getTimecodes($movieId, $timecodeId);
+        $data = $this->timecodeService->getTimecodes($timecodeId);
         if (!$data) throw ApiException::notFound();
 
         return new TimecodeResource($data);

@@ -45,13 +45,12 @@ class TimecodeService
     /**
      * Get timecodes for a movie from a specific author.
      *
-     * @param int $movieId
      * @param int $timecodeId
      * @return TimecodeData|null
      */
-    public function getTimecodes(int $movieId, int $timecodeId): ?TimecodeData
+    public function getTimecodes(int $timecodeId): ?TimecodeData
     {
-        $segments = Cache::remember(TimecodeCacheKey::segments($movieId, $timecodeId), now()->addMinutes(10), function () use ($timecodeId) {
+        $data = Cache::remember(TimecodeCacheKey::timecodes($timecodeId), now()->addMinutes(10), function () use ($timecodeId) {
             $segments = MovieTimecodeSegment::timecodeId($timecodeId)
                 ->orderBy('start_time')
                 ->get(['id', 'tag_id', 'action_id', 'start_time', 'end_time']);
@@ -60,15 +59,20 @@ class TimecodeService
                 return null;
             }
 
-            return $segments->map(fn($s) => TimecodeSegmentData::toArrayFromModel($s));
+            $segment = $segments->first();
+            return [
+                'movie_id' => $segment->movie_id,
+                'timecode_id' => $segment->timecode_id,
+                'segments' => $segments->map(fn($s) => TimecodeSegmentData::toArrayFromModel($s))
+            ];
         });
 
-        if (!$segments) return null;
+        if (!isset($data['segments'])) return null;
 
         return new TimecodeData(
-            id: $timecodeId,
-            movieId: $movieId,
-            segments: collect($segments)->map(fn($s) => TimecodeSegmentData::fromArray($s))
+            id: $data['timecode_id'],
+            movieId: $data['movie_id'],
+            segments: collect($data['segments'])->map(fn($s) => TimecodeSegmentData::fromArray($s))
         );
     }
 
@@ -197,7 +201,7 @@ class TimecodeService
 
             // Clearing the timecode cache
             Cache::forget(TimecodeCacheKey::authors($timecode->movie_id));
-            Cache::forget(TimecodeCacheKey::segments($timecode->movie_id, $timecode->id));
+            Cache::forget(TimecodeCacheKey::timecodes($timecode->id));
         });
     }
 
@@ -243,7 +247,7 @@ class TimecodeService
 
         // Clearing the timecode cache
         Cache::forget(TimecodeCacheKey::authors($movieId));
-        Cache::forget(TimecodeCacheKey::segments($movieId, $timecodeId));
+        Cache::forget(TimecodeCacheKey::timecodes($timecode->id));
 
         return $result;
     }
