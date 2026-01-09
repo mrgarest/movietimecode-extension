@@ -42,19 +42,23 @@ class MovieController extends Controller
     }
 
     /**
-     * Get preview movie data if it has timecodes.
+     * Gives info about the movie if timecodes exist for the specified movie.
      */
-    public function preview(Request $request)
+    public function searchTimecodes(Request $request)
     {
         $validated = $request->validate([
             'q' => 'required|string',
             'year' => 'nullable|integer'
         ]);
 
-        return new MoviePreviewResource($this->movieService->preview(
+        $data = $this->movieService->searchTimecodes(
             title: trim(urldecode($validated['q'])),
             year: $validated['year'] ?? null
-        ));
+        );
+
+        if (!$data) throw ApiException::notFound();
+
+        return new MoviePreviewResource($data);
     }
 
     /**

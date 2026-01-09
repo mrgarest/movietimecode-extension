@@ -51,7 +51,7 @@ Route::prefix('v2')->group(function () {
     Route::prefix('movies')->group(function () {
         Route::controller(MovieController::class)->group(function () {
             Route::get('/search', 'search');
-            Route::get('/preview', 'preview');
+            Route::get('/timecodes/search', 'searchTimecodes');
         });
 
         Route::prefix('{movieId}')->group(function () {

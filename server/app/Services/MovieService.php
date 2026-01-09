@@ -246,14 +246,14 @@ class MovieService
     }
 
     /**
-     * Get preview movie data if it has timecodes.
+     * Gives info about the movie if timecodes exist for the specified movie.
      * 
      * @param string $title
      * @param int|null $year
      * @param string $langCode
      * @return MoviePreviewData|null
      */
-    public function preview(string $title, ?int $year = null, string $langCode = 'uk'): ?MoviePreviewData
+    public function searchTimecodes(string $title, ?int $year = null, string $langCode = 'uk'): ?MoviePreviewData
     {
         $movie = Cache::remember(MovieCacheKey::preview($title, $year), Carbon::now()->addMinutes(5), function () use ($title, $year) {
             $movie = Movie::findByTitlesYear(MovieHelper::getTitles($title)->all(), $year)
