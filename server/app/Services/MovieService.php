@@ -154,21 +154,20 @@ class MovieService
             $now = Carbon::now();
 
             // Saving external IDs
-            $externalIdsInsert = [
+            $externalIdsInsert = [[
                 'movie_id' => $movie->id,
                 'external_id' => EnumsMovieExternalId::TMDB,
                 'value' => $movieDetails['id'],
                 'created_at' => $now,
                 'updated_at' => $now
+            ]];
+            if (isset($movieDetails['imdb_id'])) $externalIdsInsert[] = [
+                'movie_id' => $movie->id,
+                'external_id' => EnumsMovieExternalId::IMDB,
+                'value' => $movieDetails['imdb_id'],
+                'created_at' => $now,
+                'updated_at' => $now
             ];
-            if (isset($movieDetails['imdb_id'])) $externalIdsInsert[] =
-                [
-                    'movie_id' => $movie->id,
-                    'external_id' => EnumsMovieExternalId::IMDB,
-                    'value' => $movieDetails['imdb_id'],
-                    'created_at' => $now,
-                    'updated_at' => $now
-                ];
             MovieExternalId::insert($externalIdsInsert);
 
             // Translation processing
