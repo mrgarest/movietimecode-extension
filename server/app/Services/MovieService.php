@@ -154,25 +154,25 @@ class MovieService
             $now = Carbon::now();
 
             // Saving external IDs
-            MovieExternalId::insert([
-                [
-                    'movie_id' => $movie->id,
-                    'external_id' => EnumsMovieExternalId::TMDB,
-                    'value' => $movieDetails['id'],
-                    'created_at' => $now,
-                    'updated_at' => $now
-                ],
+            $externalIdsInsert = [
+                'movie_id' => $movie->id,
+                'external_id' => EnumsMovieExternalId::TMDB,
+                'value' => $movieDetails['id'],
+                'created_at' => $now,
+                'updated_at' => $now
+            ];
+            if (isset($movieDetails['imdb_id'])) $externalIdsInsert[] =
                 [
                     'movie_id' => $movie->id,
                     'external_id' => EnumsMovieExternalId::IMDB,
                     'value' => $movieDetails['imdb_id'],
                     'created_at' => $now,
                     'updated_at' => $now
-                ]
-            ]);
+                ];
+            MovieExternalId::insert($externalIdsInsert);
 
             // Translation processing
-            $insertData = collect($movieTranslations)
+            $insertData = collect($movieTranslations['translations'])
                 ->map(fn($t) => [
                     'lang_code' => strtolower($t['iso_639_1']),
                     'title' => $t['data']['title'] ?? null
@@ -189,7 +189,7 @@ class MovieService
             $insertData = [];
 
             // Production processing with TMDB
-            foreach ($tmdbData['production_companies'] ?? [] as $comp) {
+            foreach ($movieDetails['production_companies'] ?? [] as $comp) {
                 $insertData[] = $companyService->movieCompanyInsert(
                     movie: $movie,
                     company: $companyService->getOrCreateCompany($comp['name'], $comp['origin_country'] ?? null),
@@ -212,10 +212,10 @@ class MovieService
         });
 
         // Get the content rating from IMDB and add it to the movie
-        $imdbService->updateContentRatings(
+        if (isset($movieDetails['imdb_id'])) $imdbService->updateContentRatings(
             parserService: $imdbParserService,
             movie: $movie,
-            imdbId: $tmdbId
+            imdbId: $movieDetails['imdb_id']
         );
 
         return $movie;

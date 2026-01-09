@@ -15,11 +15,11 @@ class ImdbParserService
     /**
      * Get information about the movie from IMDB.
      *
-     * @param int|string $id
+     * @param string $id
      * 
      * @return ImdbInfoData|null
      */
-    public function info(int|string $id): ImdbInfoData
+    public function info(string $id): ImdbInfoData
     {
         $data = $this->client->info($id);
         if (!$data) return new ImdbInfoData();
@@ -139,7 +139,7 @@ class ImdbParserService
             ->toArray();
     }
 
-    public function contentInfo($id): ?array
+    public function contentInfo(string $id): ?array
     {
         $data = $this->client->contentInfo($id);
         if (!$data) return null;

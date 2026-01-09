@@ -58,9 +58,9 @@ class ImdbService
      *
      * @param ImdbParserService $parserService
      * @param Movie $movie
-     * @param int $imdbId
+     * @param string $imdbId
      */
-    public function updateContentRatings(ImdbParserService $parserService, Movie $movie, int $imdbId): void
+    public function updateContentRatings(ImdbParserService $parserService, Movie $movie, string $imdbId): void
     {
         $content = $parserService->contentInfo($imdbId);
         if (empty($content['rating'])) return;
