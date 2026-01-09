@@ -80,6 +80,6 @@ const onMessage = async (event: any) => {
 /**
  * Adds message listener if on auth callback page.
  */
-if (location.href.includes("/auth/callback")) {
+if (location.href.includes("/login/callback")) {
   window.addEventListener("message", onMessage);
 }

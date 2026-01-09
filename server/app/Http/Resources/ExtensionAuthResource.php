@@ -15,7 +15,7 @@ class ExtensionAuthResource extends SuccessResource
     {
         return [
             'id' => $this->resource->id,
-            'role_id' => $this->resource->role_id,
+            'role_id' => $this->resource->role->value,
             'username' => $this->resource->username,
             'picture' => $this->resource->picture,
             'twitch' => $this->resource->twitch ? [

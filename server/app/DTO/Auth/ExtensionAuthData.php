@@ -2,6 +2,7 @@
 
 namespace App\DTO\Auth;
 
+use App\Enums\RoleId;
 use App\Models\User;
 use Carbon\Carbon;
 use Laravel\Passport\PersonalAccessTokenResult;
@@ -10,7 +11,7 @@ readonly class ExtensionAuthData
 {
     public function __construct(
         public int $id,
-        public int $roleId,
+        public RoleId $role,
         public string $username,
         public ?string $picture,
         public string $accessToken,
@@ -22,7 +23,7 @@ readonly class ExtensionAuthData
     {
         return new self(
             id: $user->id,
-            roleId: $user->role_id,
+            role: $user->role_id,
             username: $user->username,
             picture: $user->picture,
             accessToken: $token->accessToken,
