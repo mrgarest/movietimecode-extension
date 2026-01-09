@@ -17,6 +17,7 @@ class TimecodeEditorResource extends SuccessResource
         return [
             'id' => $this->resource->id,
             'movie_id' => $this->resource->movieId,
+            'duration' => $this->resource->duration,
             'segments' => TimecodeSegmentResource::collection($this->resource->segments),
         ];
     }
