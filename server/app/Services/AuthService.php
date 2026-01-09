@@ -14,12 +14,14 @@ use App\Models\UserProvider;
 use Carbon\Carbon;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use Laravel\Socialite\Socialite;
 use Laravel\Socialite\Two\TwitchProvider;
 
 class AuthService
 {
+    public const SESSION_TARGET_KEY = 'login_target';
     public const TARGET_EXTENSION = 'extension';
 
     /**
@@ -30,26 +32,28 @@ class AuthService
      */
     public function login(string $target): RedirectResponse
     {
+        session([self::SESSION_TARGET_KEY => $target]);
+
         /** @var TwitchProvider $driver */
         $driver = Socialite::driver(AuthProvider::TWITCH->value);
 
-        return $driver->scopes(['user:read:email', 'chat:edit', 'chat:read'])->with(['state' => 'target=' . $target])->redirect();
+        return $driver->scopes(['user:read:email', 'chat:edit', 'chat:read'])->redirect();
     }
 
     /**
      * Handling the result of authorization via Socialite.
      * 
-     * @param string|null $target
      * @return CallbackAuthData
      */
-    public function callback(?string $target): CallbackAuthData
+    public function callback(): CallbackAuthData
     {
         $provider = AuthProvider::TWITCH;
+        $target = session()->pull(self::SESSION_TARGET_KEY, null);
 
         try {
             $socialite = Socialite::driver($provider->value)->user();
         } catch (\Exception $ex) {
-            \Log::error("Socialite error: " . $ex->getMessage());
+            Log::error("Socialite error: " . $ex->getMessage());
             return new CallbackAuthData(
                 success: false,
                 target: $target,
@@ -127,7 +131,7 @@ class AuthService
                 );
             });
         } catch (\Throwable $ex) {
-            \Log::error("transaction error: " . $ex->getMessage());
+            Log::error("transaction error: " . $ex->getMessage());
             return new CallbackAuthData(
                 success: false,
                 target: $target,

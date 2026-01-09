@@ -3,7 +3,6 @@
 namespace App\Http\Controllers;
 
 use App\Services\AuthService;
-use Illuminate\Http\Request;
 
 class AuthController extends Controller
 {
@@ -11,20 +10,14 @@ class AuthController extends Controller
         protected AuthService $authService
     ) {}
 
-    /**
-     * Login for the extension.
-     */
     public function extension()
     {
         return $this->authService->login(AuthService::TARGET_EXTENSION);
     }
 
-    public function callback(Request $request)
+    public function callback()
     {
-        parse_str($request->input('state'), $stateData);
-        $target = $stateData['target'] ?? 'extension';
-
-        $data = $this->authService->callback($target);
+        $data = $this->authService->callback();
 
         // Outdated authorization method
         $oldLoginData = $data->success ? ['auth' => [

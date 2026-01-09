@@ -8,7 +8,7 @@ readonly class CallbackAuthData
         public bool $success,
         public ?string $target = null,
         public ?int $id = null,
-        public ?int $token = null,
+        public ?string $token = null,
         public ?string $langKey = null,
     ) {}
 
