@@ -2,13 +2,15 @@
 
 namespace App\Http\Middleware;
 
-
+use App\Exceptions\ApiException;
 use Closure;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use MrGarest\EchoApi\EchoApi;
 use Symfony\Component\HttpFoundation\Response;
 
+/**
+ * @deprecated old
+ */
 class AuthApiMiddleware
 {
     /**
@@ -18,15 +20,20 @@ class AuthApiMiddleware
      */
     public function handle(Request $request, Closure $next): Response
     {
-        if (Auth::guard('api')->guest()) {
-            return EchoApi::findError('ACCESS_TOKEN_INVALID');
+        $user = Auth::guard('api')->user();
+
+        // Authorization check
+        if (!$user) {
+            throw ApiException::accessTokenInvalid();
         }
 
-        $user = Auth::guard('api')->user();
-        if (!$user) return EchoApi::findError('USER_NOT_FOUND');
+        // Deactivation check
+        if ($user->deactivated_at) {
+            throw ApiException::userDeactivated();
+        }
 
-        if ($user->deactivated_at != null) return EchoApi::findError('USER_DEACTIVATED');
         $request->setUserResolver(fn() => $user);
+
         return $next($request);
     }
 }

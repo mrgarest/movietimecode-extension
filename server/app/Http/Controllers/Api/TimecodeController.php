@@ -3,15 +3,21 @@
 namespace App\Http\Controllers\Api;
 
 use App\Clients\TmdbClient;
-use App\Enums\MovieExternalId as EnumsMovieExternalId;
+use App\DTO\Timecode\Editor\TimecodeEditData;
+use App\Exceptions\ApiException;
 use App\Helpers\RequestManager;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\TimecodeEditRequest;
+use App\Http\Resources\SuccessResource;
+use App\Http\Resources\Timecode\TimecodeAuthorResource;
+use App\Http\Resources\Timecode\TimecodeEditorResource;
+use App\Http\Resources\Timecode\TimecodeResource;
 use App\Models\Movie;
-use App\Models\MovieExternalId;
 use App\Models\MovieTimecode;
 use App\Models\MovieTimecodeSegment;
 use App\Notifications\AddedTimecodeNotifi;
 use App\Services\MovieService;
+use App\Services\TimecodeService;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
@@ -22,6 +28,98 @@ use Symfony\Component\HttpFoundation\Response;
 
 class TimecodeController extends Controller
 {
+    public function __construct(
+        protected TimecodeService $timecodeService
+    ) {}
+
+    /**
+     * Get a collection of timecode authors with timecode information.
+     */
+    public function authors(int $movieId)
+    {
+        return new SuccessResource([
+            'authors' => TimecodeAuthorResource::collection($this->timecodeService->getAuthors($movieId))
+        ]);
+    }
+
+    /**
+     * Get timecodes for a movie from a specific author.
+     */
+    public function timecodes(int $movieId, int $timecodeId)
+    {
+        $data = $this->timecodeService->getTimecodes($movieId, $timecodeId);
+        if (!$data) throw ApiException::notFound();
+
+        return new TimecodeResource($data);
+    }
+
+    /**
+     * Adds new timecodes to the database.
+     *
+     * @param TimecodeEditRequest $request
+     * @param int $movieId TMDB ID
+     * @param MovieService $movieService
+     */
+    public function new(TimecodeEditRequest $request, int $movieId, MovieService $movieService)
+    {
+        $this->timecodeService->new(
+            data: TimecodeEditData::fromRequest($request->validated()),
+            tmdbId: $movieId,
+            user: $request->user(),
+            movieService: $movieService,
+        );
+
+        return new SuccessResource(null);
+    }
+
+    /**
+     * Editing existing timecodes for a movie.
+     *
+     * @param TimecodeEditRequest $request
+     * @param int $timecodeId
+     */
+    public function edit(TimecodeEditRequest $request, int $timecodeId)
+    {
+        $this->timecodeService->edit(
+            data: TimecodeEditData::fromRequest($request->validated()),
+            timecodeId: $timecodeId,
+            user: $request->user()
+        );
+
+        return new SuccessResource(null);
+    }
+
+    /**
+     * Get information for the timecode editor.
+     */
+    public function editor(Request $request, int $timecodeId)
+    {
+        $data = $this->timecodeService->editor(
+            user: $request->user(),
+            timecodeId: $timecodeId
+        );
+        if (!$data) throw ApiException::notFound();
+
+        return new TimecodeEditorResource($data);
+    }
+
+    /**
+     * Deleting timecodes.
+     */
+    public function delete(Request $request, int $timecodeId)
+    {
+        $this->timecodeService->delete(
+            user: $request->user(),
+            timecodeId: $timecodeId
+        );
+
+        return new SuccessResource(null);
+    }
+
+
+
+
+
     /**
      * Generates a cache key for the timecode segments
      *
@@ -50,8 +148,10 @@ class TimecodeController extends Controller
      *
      * @param Request $request
      * @return \Illuminate\Http\JsonResponse
+     * 
+     * @deprecated use editor
      */
-    public function editor(Request $request, $movieId)
+    public function editorOld(Request $request, $movieId)
     {
         if (!$movieId) return EchoApi::httpError(Response::HTTP_BAD_REQUEST);
 
@@ -99,8 +199,10 @@ class TimecodeController extends Controller
      *
      * @param Request $request 
      * @return \Illuminate\Http\JsonResponse
+     * 
+     * @deprecated use new
      */
-    public function new(Request $request)
+    public function newOld(Request $request, MovieService $movieService)
     {
         $validator = Validator::make($request->json()->all(), [
             'movie_id' => 'nullable|integer',
@@ -118,34 +220,15 @@ class TimecodeController extends Controller
         $user = $request->user();
         $data = $validator->getData();
 
-        $withMovie = [
-            'movieTimecodes as has_timecode' => function ($query) use ($user) {
-                $query->where('user_id', $user->id);
-            }
-        ];
-
-        $hasTimecode = false;
-        if (isset($data['movie_id'])) {
-            $movie = Movie::withExists($withMovie)->select('id', 'title')->find($data['movie_id']);
-            if ($movie) $hasTimecode = $movie->has_timecode;
-        } else {
-            $movieExternalId = MovieExternalId::with(['movie' => function ($query) use ($withMovie) {
-                $query->select('id', 'title')->withExists($withMovie);
-            }])->externalAndValue(EnumsMovieExternalId::TMDB, $data['tmdb_id'])->first();
-
-            $movie = $movieExternalId->movie ?? null;
-
-            if ($movie) {
-                $hasTimecode = $movie->has_timecode;
-            } else {
-                $handler = MovieService::handleAddMovie($data['tmdb_id']);
-                $hasTimecode = false;
-                $movie = $handler['movie'] ?? null;
-            }
-        }
+        // Get the movie model
+        $movie = isset($data['tmdb_id']) ? $movieService->getOrImport($data['tmdb_id']) : Movie::find($data['movie_id']);
 
         if (!$movie) return EchoApi::httpError(Response::HTTP_NOT_FOUND);
 
+        // If timecodes have already been added earlier by this user, we return an error. 
+        $hasTimecode = MovieTimecode::userId($user->id)
+            ->movieId($movie->id)
+            ->exists();
         if ($hasTimecode) return EchoApi::httpError(Response::HTTP_CONFLICT);
 
         $movieTimecode = MovieTimecode::create([
@@ -194,8 +277,10 @@ class TimecodeController extends Controller
      * @param Request 
      * @param int $timecodeId
      * @return \Illuminate\Http\JsonResponse
+     * 
+     * @deprecated use edit
      */
-    public function edit(Request $request, $timecodeId)
+    public function editOld(Request $request, $timecodeId)
     {
         $validator = Validator::make($request->json()->all(), [
             'duration' => 'required|integer|min:1',
@@ -273,32 +358,14 @@ class TimecodeController extends Controller
 
 
     /**
-     * Deletes user timecode by ID.
-     *
-     * @param Request $request
-     * @param int $timecodeId
-     * @return \Illuminate\Http\JsonResponse
-     */
-    public function deleteTimecode(Request $request, $timecodeId)
-    {
-        $user = $request->user();
-
-        $movieTimecode = MovieTimecode::userId($user->id)->find($timecodeId);
-        if ($movieTimecode) {
-            Cache::forget($this->timecodeEditorCacheKey($user->id, $movieTimecode->movie_id));
-            $isDelete = $movieTimecode->delete();
-        } else $isDelete = true;
-
-        return $isDelete ? EchoApi::success() : EchoApi::httpError(Response::HTTP_INTERNAL_SERVER_ERROR);
-    }
-
-    /**
      * Search for a movie and timecodes by title.
      *
      * @param Request $request
      * @return \Illuminate\Http\JsonResponse
+     * 
+     * @deprecated use movie/preview
      */
-    public function search(Request $request)
+    public function searchOld(Request $request)
     {
         $validator = Validator::make($request->all(), [
             'q' => 'required|string',
@@ -401,6 +468,8 @@ class TimecodeController extends Controller
      * @param Request $request
      * @param int $timecodeId
      * @return \Illuminate\Http\JsonResponse
+     * 
+     * @deprecated use movie/preview
      */
     public function segment(Request $request, $timecodeId)
     {

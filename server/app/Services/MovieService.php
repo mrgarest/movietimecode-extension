@@ -2,180 +2,283 @@
 
 namespace App\Services;
 
+use App\Cache\MovieCacheKey;
 use App\Clients\TmdbClient;
-use App\Enums\ImdbContentRatingId;
+use App\DTO\Movie\MoviePreviewData;
+use App\DTO\Movie\MovieSearchData;
 use App\Enums\MovieCompanyRole;
 use App\Enums\MovieExternalId as EnumsMovieExternalId;
 use App\Enums\StorageId;
-use App\Models\Company;
-use App\Models\ImdbContentRating;
+use App\Helpers\MovieHelper;
 use App\Models\Movie;
 use App\Models\MovieCompany;
 use App\Models\MovieExternalId;
 use App\Models\MovieTranslation;
-use App\Services\ImdbService;
+use App\Services\IMDB\ImdbService;
+use App\Services\IMDB\ImdbParserService;
 use Carbon\Carbon;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
 
 class MovieService
 {
     /**
-     * Receives information about the film from sources and adds the film to the database
+     * Checking whether the language of the movie is blacklisted.
      *
-     * @param int $tmdbId
+     * @param string $language
+     * @return bool
+     */
+    public function isBlacklistLanguage(string $language): bool
+    {
+        return in_array(strtolower($language), ['ru', 'by']);
+    }
+
+    /**
+     * Get a list of movies from TMDB based on specified parameters.
+     *
+     * @param string $title
+     * @param int $page
+     * @param int|null $year
      * @return array|null
      */
-    public static function handleAddMovie($tmdbId)
+    public function searchTmdb(string $title, int $page = 1, ?int $year = null): Collection
     {
-        $movieDetails = TmdbClient::movieDetails($tmdbId);
-        if (!$movieDetails) return null;
-        $movieTranslations = TmdbClient::movieTranslations($tmdbId);
+        $client = app(TmdbClient::class);
 
-        $infoImdb = ImdbService::info($movieDetails['imdb_id']);
+        $titles = MovieHelper::getTitles($title);
 
-        $storageId = StorageId::TMDB->value;
-        $now = Carbon::now();
-        $movieLangs = config('movie.langs');
+        // Get info about the movie from the client.
+        $searchMovies = Cache::remember(MovieCacheKey::searchTmdb($title, $page, $year), Carbon::now()->addMinutes(10), function () use ($client, $titles, $page, $year) {
+            foreach ($titles as $t) {
+                $result = $client->searchMovie($t, 'uk-UA', $page, $year);
 
-        $movie = Movie::create([
-            'storage_id' => $storageId,
-            'lang_code' => strtolower($movieDetails['original_language']),
-            'title' => $movieDetails['original_title'],
-            'duration' => $movieDetails['runtime'] * 60,
-            'poster_path' => $movieDetails['poster_path'] != null ? str_replace('/', '', $movieDetails['poster_path']) : null,
-            'backdrop_path' => $movieDetails['backdrop_path'] != null ? str_replace('/', '', $movieDetails['backdrop_path']) : null,
-            'rating_imdb' => $infoImdb['rating'] ?? null,
-            'release_date' => $movieDetails['release_date']
-        ]);
+                if (!empty($result['results'])) {
+                    return $result['results'];
+                }
+            }
+            return [];
+        });
 
-        if ($movieTranslations !== null) {
-            $movieTranslationData = [];
+        // If no movies are found, return an empty array
+        if (empty($searchMovies)) return collect();
 
-            foreach ($movieTranslations['translations'] as $translation) {
-                $langCode = strtolower($translation['iso_639_1']);
-                $title = isset($translation['data']['title']) && $translation['data']['title'] != '' ? $translation['data']['title'] : null;
+        // Creating a collection with movies
+        $movies = collect($searchMovies)
+            // Filter movies by language
+            ->filter(fn($value) => isset($value['release_date']) && !$this->isBlacklistLanguage($value['original_language']))
+            ->map(fn($value) => MovieSearchData::fromTmdb($value))
+            ->values();
 
-                if (!in_array($langCode, $movieLangs) || collect($movieTranslationData)->contains('lang_code', $langCode) || $title == null) continue;
+        if (!$movies->isNotEmpty()) return $movies;
 
-                $movieTranslationData[] = [
+        // Search for movie IDs in the database
+        $movieExternalIds = MovieExternalId::externalId(EnumsMovieExternalId::TMDB)
+            ->whereIn('value', $movies->whereNull('id')->pluck('tmdbId')->toArray())
+            ->get(['value', 'movie_id'])
+            ->keyBy('value');
+
+        // Adding movie IDs to the movie search collection
+        $movies->each(function (MovieSearchData $item) use ($movieExternalIds) {
+            if ($externalIdRecord = $movieExternalIds->get($item->tmdbId)) {
+                $item->id = $externalIdRecord->movie_id;
+            }
+        });
+
+        return $movies;
+    }
+
+    /**
+     * Get information about the movie from the database. If the movie is not in the database, import it.
+     *
+     * @param int $tmdbId
+     * 
+     * @return Movie|null
+     */
+    public function getOrImport(int $tmdbId): ?Movie
+    {
+        $cacheKey = MovieCacheKey::externalTmdbId($tmdbId);
+
+        // Convert the array back to a model object without querying the database
+        if ($movieData = Cache::get($cacheKey)) return Movie::fromCache($movieData);
+
+        $movie = Movie::whereRelation('externalIds', function ($query) use ($tmdbId) {
+            $query->where('external_id', EnumsMovieExternalId::TMDB->value)
+                ->where('value', $tmdbId);
+        })->first();
+
+        if ($movie) {
+            Cache::put($cacheKey, $movie->toCache(), Carbon::now()->addMinutes(5));
+            return $movie;
+        }
+
+        return app()->call([$this, 'importFromTmdb'], ['tmdbId' => $tmdbId]);
+    }
+
+    /**
+     * Get information about the movie from sources and add the movie to the database.
+     *
+     * @param TmdbClient $tmdbClient
+     * @param ImdbService $imdbService
+     * @param ImdbParserService $imdbParserService
+     * @param CompanyService $companyService
+     * @param int $tmdbId
+     * 
+     * @return Movie|null
+     */
+    public function importFromTmdb(
+        TmdbClient $tmdbClient,
+        ImdbService $imdbService,
+        ImdbParserService $imdbParserService,
+        CompanyService $companyService,
+        int $tmdbId
+    ): ?Movie {
+        $movieDetails = $tmdbClient->movieDetails($tmdbId);
+        $movieTranslations = $tmdbClient->movieTranslations($tmdbId);
+        if (!$movieDetails || !$movieTranslations) return null;
+        $infoImdb = $imdbParserService->info($movieDetails['imdb_id']);
+
+        $movie = DB::transaction(function () use ($movieDetails, $movieTranslations, $companyService, $infoImdb) {
+            // Saving the movie to the database
+            $movie = Movie::create([
+                'storage_id' => StorageId::TMDB->value,
+                'lang_code' => strtolower($movieDetails['original_language']),
+                'title' => $movieDetails['original_title'],
+                'duration' => $movieDetails['runtime'] * 60,
+                'poster_path' => $movieDetails['poster_path'] != null ? str_replace('/', '', $movieDetails['poster_path']) : null,
+                'backdrop_path' => $movieDetails['backdrop_path'] != null ? str_replace('/', '', $movieDetails['backdrop_path']) : null,
+                'rating_imdb' => $infoImdb->rating ?? null,
+                'release_date' => $movieDetails['release_date']
+            ]);
+
+            $now = Carbon::now();
+
+            // Saving external IDs
+            MovieExternalId::insert([
+                [
                     'movie_id' => $movie->id,
-                    'storage_id' => null,
-                    'lang_code' => $langCode,
-                    'title' => $title,
+                    'external_id' => EnumsMovieExternalId::TMDB,
+                    'value' => $movieDetails['id'],
                     'created_at' => $now,
                     'updated_at' => $now
-                ];
-            }
-            if (!empty($movieTranslationData)) MovieTranslation::insert($movieTranslationData);
-        }
-
-        MovieExternalId::insert([
-            [
-                'movie_id' => $movie->id,
-                'external_id' => EnumsMovieExternalId::TMDB,
-                'value' => $movieDetails['id'],
-                'created_at' => $now,
-                'updated_at' => $now
-            ],
-            [
-                'movie_id' => $movie->id,
-                'external_id' => EnumsMovieExternalId::IMDB,
-                'value' => $movieDetails['imdb_id'],
-                'created_at' => $now,
-                'updated_at' => $now
-            ]
-        ]);
-
-        $cacheKeyMovieCompany = 'MovieCompany_name_id_';
-
-        $movieCompanyInsert = [];
-        if ($movieDetails['production_companies'] != null) foreach ($movieDetails['production_companies'] as $productionCompanies) {
-            $name = trim($productionCompanies['name']);
-            $cacheKey = $cacheKeyMovieCompany . md5($name);
-            $movieCompanyId = Cache::get($cacheKey, null);
-
-            if ($movieCompanyId == null) {
-                $movieCompanyId = Company::firstOrCreate([
-                    'name' => $name,
-                ], [
-                    'country' => strtolower($productionCompanies['origin_country']),
-                ])->id;
-
-                Cache::put($cacheKey, $movieCompanyId, Carbon::now()->addHour());
-            }
-
-            $movieCompanyInsert[] = [
-                'role_id' => MovieCompanyRole::PRODUCTION->value,
-                'movie_id' => $movie->id,
-                'company_id' => $movieCompanyId,
-                'created_at' => $now,
-                'updated_at' => $now
-            ];
-        }
-
-        if ($infoImdb != null && $infoImdb['distributors'] != null) foreach ($infoImdb['distributors'] as $distributor) {
-            $cacheKey = $cacheKeyMovieCompany . md5($distributor);
-            $movieCompanyId = Cache::get($cacheKey, null);
-
-            if ($movieCompanyId == null) {
-                $movieCompanyId = Company::firstOrCreate([
-                    'name' => $distributor,
-                ], [
-                    'country' => null,
-                ])->id;
-
-                Cache::put($cacheKey, $movieCompanyId, Carbon::now()->addHour());
-            }
-
-            $movieCompanyInsert[] = [
-                'role_id' => MovieCompanyRole::DISTRIBUTOR->value,
-                'movie_id' => $movie->id,
-                'company_id' => $movieCompanyId,
-                'created_at' => $now,
-                'updated_at' => $now
-            ];
-        }
-
-        if (!empty($movieCompanyInsert)) MovieCompany::insert($movieCompanyInsert);
-
-
-        $contentInfo = ImdbService::contentInfo($movieDetails['imdb_id']);
-
-        if ($contentInfo != null && isset($contentInfo['rating'])) {
-            $contentRatingInsert = [];
-            if ($contentInfo['rating']['nudity'] !== null) $contentRatingInsert[] = [
-                'content_id' => ImdbContentRatingId::NUDITY->value,
-                'level' => $contentInfo['rating']['nudity']
-            ];
-            if ($contentInfo['rating']['violence'] !== null) $contentRatingInsert[] = [
-                'content_id' => ImdbContentRatingId::VIOLENCE->value,
-                'level' => $contentInfo['rating']['violence']
-            ];
-            if ($contentInfo['rating']['profanity'] !== null) $contentRatingInsert[] = [
-                'content_id' => ImdbContentRatingId::PROFANITY->value,
-                'level' => $contentInfo['rating']['profanity']
-            ];
-            if ($contentInfo['rating']['alcohol'] !== null) $contentRatingInsert[] = [
-                'content_id' => ImdbContentRatingId::ALCOHOL->value,
-                'level' => $contentInfo['rating']['alcohol']
-            ];
-            if ($contentInfo['rating']['frightening'] !== null) $contentRatingInsert[] = [
-                'content_id' => ImdbContentRatingId::FRIGHTENING->value,
-                'level' => $contentInfo['rating']['frightening']
-            ];
-
-            if (!empty($contentRatingInsert)) {
-                foreach ($contentRatingInsert as $key => $value) $contentRatingInsert[$key] = array_merge([
+                ],
+                [
                     'movie_id' => $movie->id,
+                    'external_id' => EnumsMovieExternalId::IMDB,
+                    'value' => $movieDetails['imdb_id'],
                     'created_at' => $now,
                     'updated_at' => $now
-                ], $value);
-                ImdbContentRating::insert($contentRatingInsert);
-            }
-        }
+                ]
+            ]);
 
-        return [
-            'movie' => $movie
-        ];
+            // Translation processing
+            $insertData = collect($movieTranslations)
+                ->map(fn($t) => [
+                    'lang_code' => strtolower($t['iso_639_1']),
+                    'title' => $t['data']['title'] ?? null
+                ])
+                ->filter(fn($t) => !$this->isBlacklistLanguage($t['lang_code']) && !empty($t['title']))
+                ->unique('lang_code')
+                ->map(fn($t) => array_merge($t, [
+                    'movie_id'   => $movie->id,
+                    'created_at' => $now,
+                    'updated_at' => $now
+                ]))->toArray();
+
+            if ($insertData) MovieTranslation::insert($insertData);
+            $insertData = [];
+
+            // Production processing with TMDB
+            foreach ($tmdbData['production_companies'] ?? [] as $comp) {
+                $insertData[] = $companyService->movieCompanyInsert(
+                    movie: $movie,
+                    company: $companyService->getOrCreateCompany($comp['name'], $comp['origin_country'] ?? null),
+                    role: MovieCompanyRole::PRODUCTION
+                );
+            }
+
+            // Processing distributors from IMDB
+            foreach ($infoImdb->distributors ?? [] as $distributor) {
+                $insertData[] = $companyService->movieCompanyInsert(
+                    movie: $movie,
+                    company: $companyService->getOrCreateCompany($distributor),
+                    role: MovieCompanyRole::DISTRIBUTOR
+                );
+            }
+            if (!empty($insertData)) MovieCompany::insert($insertData);
+            $insertData = [];
+
+            return $movie;
+        });
+
+        // Get the content rating from IMDB and add it to the movie
+        $imdbService->updateContentRatings(
+            parserService: $imdbParserService,
+            movie: $movie,
+            imdbId: $tmdbId
+        );
+
+        return $movie;
+    }
+
+    /**
+     * Get a translation for a movie.
+     * 
+     * @param Movie $movie
+     * @param string $langCode
+     * 
+     * @return MovieTranslation|null
+     */
+    public function getTranslation(Movie $movie, string $langCode = 'uk'): ?MovieTranslation
+    {
+        $data = Cache::remember(MovieCacheKey::translation($movie->id, $langCode), Carbon::now()->addMinutes(5), function () use ($movie, $langCode) {
+            $movie->loadMissing(['translations' => function ($q) use ($langCode) {
+                $q->whereIn('lang_code', [$langCode, 'en']);
+            }]);
+
+            return $movie->translations->map(fn($t) => $t->getRawOriginal())->toArray();
+        });
+
+        $translations = MovieTranslation::hydrate($data);
+
+        // First, select your preferred language. if it is not available, select English.
+        return $translations->firstWhere('lang_code', $langCode)
+            ?? $translations->firstWhere('lang_code', 'en');
+    }
+
+    /**
+     * Get preview movie data if it has timecodes.
+     * 
+     * @param string $title
+     * @param int|null $year
+     * @param string $langCode
+     * @return MoviePreviewData|null
+     */
+    public function preview(string $title, ?int $year = null, string $langCode = 'uk'): ?MoviePreviewData
+    {
+        $movie = Cache::remember(MovieCacheKey::preview($title, $year), Carbon::now()->addMinutes(5), function () use ($title, $year) {
+            $movie = Movie::findByTitlesYear(MovieHelper::getTitles($title)->all(), $year)
+                ->whereHas('movieTimecodes', function ($q) {
+                    $q->whereHas('user', fn($u) => $u->whereNull('deleted_at'));
+                })
+                ->first();
+            return $movie ? $movie->toCache() : null;
+        });
+
+        if (!$movie) return null;
+
+        $movie = Movie::fromCache($movie);
+
+        $translation = $this->getTranslation($movie, $langCode);
+
+        if (!$translation) return null;
+
+        return new MoviePreviewData(
+            id: $movie->id,
+            releaseYear: $movie->release_date?->year,
+            title: $translation->title,
+            originalTitle: $movie->title,
+            posterPath: $movie->poster_path,
+        );
     }
 }

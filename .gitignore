@@ -45,3 +45,6 @@ lerna-debug.log*
 /server/.phpactor.json
 /server/.phpunit.result.cache
 /server/auth.json
+/server/docs
+_ide_helper.php
+_ide_helper_models.php

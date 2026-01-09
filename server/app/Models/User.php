@@ -2,13 +2,12 @@
 
 namespace App\Models;
 
+use App\Enums\RoleId;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Passport\HasApiTokens;
-use Illuminate\Database\Eloquent\Builder;
-
 
 class User extends Authenticatable
 {
@@ -49,7 +48,7 @@ class User extends Authenticatable
     {
         return [
             'id'               => 'int',
-            'role_id'          => 'int',
+            'role_id'          => RoleId::class,
             'username'         => 'string',
             'email'            => 'string',
             'password'         => 'hashed',
@@ -70,5 +69,10 @@ class User extends Authenticatable
     public function providers()
     {
         return $this->hasMany(UserProvider::class);
+    }
+
+    public function isAdmin(): bool
+    {
+        return $this->role_id === RoleId::ADMIN;
     }
 }

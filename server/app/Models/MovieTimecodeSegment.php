@@ -35,6 +35,11 @@ class MovieTimecodeSegment extends Model
         'updated_at' => 'datetime',
     ];
 
+    public function scopeMovieId(Builder $query, $id): Builder
+    {
+        return $query->where('movie_id', $id);
+    }
+
     public function scopeTimecodeId(Builder $query, $id): Builder
     {
         return $query->where('timecode_id', $id);

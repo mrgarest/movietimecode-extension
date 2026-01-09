@@ -2,7 +2,9 @@
 
 namespace App\Models;
 
+use App\Enums\AuthProvider;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Builder;
 
 class UserProvider extends Model
 {
@@ -24,14 +26,19 @@ class UserProvider extends Model
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
     ];
-    
+
     public function user()
     {
         return $this->belongsTo(User::class);
     }
 
-    public static function findUser($provider, $accountId)
+    public function scopeProvider(Builder $query, AuthProvider $provider): Builder
     {
-        return self::where('provider', $provider)->where('account_id', $accountId);
+        return $query->where('provider', $provider->value);
+    }
+
+    public function scopeAccountId(Builder $query, string $accountId): Builder
+    {
+        return $query->where('account_id', $accountId);
     }
 }

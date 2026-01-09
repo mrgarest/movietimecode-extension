@@ -11,3 +11,5 @@ Artisan::command('inspire', function () {
 Schedule::command('queue:process-jobs')->everyMinute();
 
 Schedule::command('cache:gc')->hourly();
+
+Schedule::command('model:prune')->daily();

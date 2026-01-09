@@ -6,7 +6,7 @@ use Illuminate\Support\Facades\Http;
 
 class ImdbClient
 {
-    public static function withHeaders()
+    public function withHeaders()
     {
         $userAgents = config('user-agents');
         return Http::withHeaders([
@@ -15,19 +15,20 @@ class ImdbClient
         ]);
     }
 
-    public static function get(string $url)
+    public function get(string $url)
     {
+        /** @var Response $response */
         $response = static::withHeaders()->get($url);
         return $response->successful() ? $response->body() : null;
     }
 
-    public static function info($id)
+    public function info($id)
     {
-        return static::get("https://www.imdb.com/title/$id/reference");
+        return $this->get("https://www.imdb.com/title/$id/reference");
     }
 
-    public static function contentInfo($id)
+    public function contentInfo($id)
     {
-        return static::get("https://www.imdb.com/title/$id/parentalguide/?ref_=tt_ov_pg#contentRating");
+        return $this->get("https://www.imdb.com/title/$id/parentalguide/?ref_=tt_ov_pg#contentRating");
     }
 }

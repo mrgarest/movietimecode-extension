@@ -9,56 +9,57 @@ class TwitchClient
 {
     const API_BASE = "https://api.twitch.tv";
 
-    public static function withHeaders(string $accessToken)
+    private ?string $clientId = null;
+    private ?string $clientSecret = null;
+
+    public function __construct()
+    {
+        $data = config('services.twitch.client_id');
+        $this->clientId = $data['client_id'] ?? null;
+        $this->clientSecret = $data['client_secret'] ?? null;
+    }
+
+    public function withHeaders(string $accessToken)
     {
         return Http::withHeaders([
-            'Client-ID' => 'Bearer ' . config('services.twitch.client_id'),
+            'Client-ID' => 'Bearer ' . $this->clientId,
             'Accept' => 'application/json',
         ])->withToken($accessToken);
     }
 
-    public static function stream(string $username, string $accessToken)
+    /**
+     * Get information about stream.
+     * 
+     * @param string $accessToken
+     * @param string $username
+     * @return array|null
+     */
+    public function stream(string $accessToken, string $username): ?array
     {
-        $response = static::withHeaders($accessToken)->get(self::API_BASE . '/helix/streams', [
+        /** @var Response $response */
+        $response = $this->withHeaders($accessToken)->get(self::API_BASE . '/helix/streams', [
             'user_login' => $username
         ]);
-        if (!$response->successful()) return null;
-        $data = $response->json()[0] ?? null;
-        if (!$data) return null;
 
-        return [
-            'id' => $data['id'],
-            'user_id' => $data['user_id'],
-            'username' => $data['user_login'],
-            'type' => $data['type'],
-            'title' => $data['title'],
-            'language' => $data['language'],
-            'game' => [
-                'id' => $data['game_id'],
-                'name' =>  $data['game_name']
-            ],
-            'is_live' => $data['type'] == "live",
-            'is_mature' => $data['type'],
-        ];
-
-        return $response->successful() ? $response->json() : null;
+        return $response->successful() ? $response->json()[0] ?? null : null;
     }
 
-    public static function refreshToken(string $refreshToken)
+    /**
+     * Get a new access token from Twitch.
+     * 
+     * @param string $refreshToken
+     * @return array|null
+     */
+    public function refreshToken(string $refreshToken): ?array
     {
+        /** @var Response $response */
         $response = Http::asForm()->post(self::API_BASE . '/oauth2/token', [
             'grant_type' => 'refresh_token',
             'refresh_token' => $refreshToken,
-            'client_id' => config('services.twitch.client_id'),
-            'client_secret' => config('services.twitch.client_secret'),
+            'client_id' => $this->clientId,
+            'client_secret' => $this->clientSecret
         ]);
 
-        if (!$response->successful()) return null;
-        $data = $response->json();
-        return [
-            'access_token' => $data['access_token'],
-            'refresh_token' => $data['refresh_token'],
-            'expires_at' => Carbon::now()->addSeconds($data['expires_in'])->timestamp,
-        ];
+        return $response->successful() ? $response->json() : null;
     }
 }

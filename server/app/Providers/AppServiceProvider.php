@@ -2,9 +2,9 @@
 
 namespace App\Providers;
 
+use App\Services\AuthService;
 use Illuminate\Support\ServiceProvider;
-use Illuminate\Support\Facades\Event;
-use App\Providers\TwitchProvider;
+use Laravel\Passport\Passport;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -21,5 +21,8 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        Passport::tokensCan([
+            AuthService::TARGET_EXTENSION => 'Permission to use extension API'
+        ]);
     }
 }

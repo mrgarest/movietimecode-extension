@@ -3,38 +3,28 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use App\Clients\TwitchClient;
-use Carbon\Carbon;
+use App\Http\Resources\SuccessResource;
+use App\Http\Resources\Twitch\TwitchTokenResource;
+use App\Services\TwitchService;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Validator;
-use Illuminate\Support\Facades\Cache;
-use Symfony\Component\HttpFoundation\Response;
-use MrGarest\EchoApi\EchoApi;
 
 class TwitchController extends Controller
 {
+    public function __construct(
+        protected TwitchService $twitchService
+    ) {}
+
     /**
-     * Processes the receipt of a new access token from Twitch.
+     * Get a new access token from Twitch.
      */
     public function token(Request $request)
     {
-        $validator = Validator::make($request->all(), [
+        $validated = $request->validate([
             'grant_type' => 'required|in:refresh_token',
             'refresh_token' => 'required|string'
         ]);
 
-        if ($validator->fails()) return EchoApi::httpError(Response::HTTP_BAD_REQUEST);
-        $data = $validator->getData();
-
-        $token = TwitchClient::refreshToken($data['refresh_token']);
-
-        if (!$token) return EchoApi::httpError(Response::HTTP_INTERNAL_SERVER_ERROR);
-
-        return EchoApi::success([
-            'access_token' => $token['access_token'],
-            'refresh_token' => $token['refresh_token'],
-            'expires_at' => $token['expires_at']
-        ]);
+        return new TwitchTokenResource($this->twitchService->token($validated['refresh_token']));
     }
 
     /**
@@ -42,20 +32,18 @@ class TwitchController extends Controller
      */
     public function streamStatus(Request $request)
     {
-        $validator = Validator::make($request->all(), [
+        $validated = $request->validate([
             'username' => 'required|string',
             'access_token' => 'required|string',
         ]);
 
-        if ($validator->fails()) return EchoApi::httpError(Response::HTTP_BAD_REQUEST);
-        $data = $validator->getData();
+        $data = $this->twitchService->stream(
+            accessToken: $validated['access_token'],
+            username: $validated['username']
+        );
 
-        $stream = Cache::remember('TwitchClientStream.' . md5($data['username']), Carbon::now()->addMinutes(5), function () use ($data) {
-            return TwitchClient::stream($data['username'], $data['access_token']);
-        });
-
-        return EchoApi::success([
-            'is_live' => $stream['is_live'] ?? false
+        return new SuccessResource([
+            'is_live' => $data ? $data->isLive : false
         ]);
     }
 }

@@ -18,6 +18,8 @@ return new class extends Migration
             $table->unsignedSmallInteger('content_id');
             $table->unsignedTinyInteger('level');
             $table->timestamps();
+
+            $table->unique(['movie_id', 'content_id']);
         });
     }
 

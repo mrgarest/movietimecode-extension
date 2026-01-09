@@ -19,4 +19,17 @@ class Company extends Model
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
     ];
+
+    public static function fromCache(array $attributes): self
+    {
+        $instance = new static;
+        $instance->setRawAttributes($attributes, true);
+        $instance->exists = true;
+        return $instance;
+    }
+
+    public function toCache(): array
+    {
+        return $this->getRawOriginal();
+    }
 }

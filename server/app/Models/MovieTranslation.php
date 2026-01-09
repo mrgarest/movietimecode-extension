@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Collection;
 
 class MovieTranslation extends Model
 {
@@ -27,4 +28,5 @@ class MovieTranslation extends Model
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
     ];
+
 }

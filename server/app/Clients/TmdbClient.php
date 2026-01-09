@@ -7,21 +7,28 @@ use Illuminate\Support\Facades\Http;
 class TmdbClient
 {
     const API_BASE = "https://api.themoviedb.org/3";
+    private ?string $token = null;
 
-    public static function withHeaders()
+    public function __construct()
+    {
+        $this->token = config('services.tmdb.token');
+    }
+
+    public function withHeaders()
     {
         return Http::withHeaders([
             'Accept' => 'application/json',
-        ])->withToken(config('services.tmdb.token'));
+        ])->withToken($this->token);
     }
 
-    public static function get(string $url, $query = null)
+    public function get(string $url, $query = null)
     {
-        $response = static::withHeaders()->get($url, $query);
+        /** @var Response $response */
+        $response = $this->withHeaders()->get($url, $query);
         return $response->successful() ? $response->json() : null;
     }
 
-    public static function searchMovie($query, $language = 'en-US', $page = 1, int|null $year = null)
+    public function searchMovie($query, $language = 'en-US', $page = 1, int|null $year = null)
     {
         $queryParams = [
             'query' => $query,
@@ -30,27 +37,27 @@ class TmdbClient
             'page' => $page,
         ];
         if ($year != null) $queryParams['year'] = $year;
-        return static::get(self::API_BASE . '/search/movie', $queryParams);
+        return $this->get(self::API_BASE . '/search/movie', $queryParams);
     }
 
-    public static function movieDetails($id, $language = 'en-US')
+    public function movieDetails($id, $language = 'en-US')
     {
-        return static::get(self::API_BASE . "/movie/$id?language=$language");
+        return $this->get(self::API_BASE . "/movie/$id?language=$language");
     }
 
-    public static function movieTranslations($id)
+    public function movieTranslations($id)
     {
-        return static::get(self::API_BASE . "/movie/$id/translations");
+        return $this->get(self::API_BASE . "/movie/$id/translations");
     }
 
-    public static function movieImages($id)
+    public function movieImages($id)
     {
-        return static::get(self::API_BASE . "/movie/$id/images");
+        return $this->get(self::API_BASE . "/movie/$id/images");
     }
 
-    public static function movieExternalIds($id)
+    public function movieExternalIds($id)
     {
-        return static::get(self::API_BASE . "/movie/$id/external_ids");
+        return $this->get(self::API_BASE . "/movie/$id/external_ids");
     }
 
     public static function getImageUrl(string $size, $path)
