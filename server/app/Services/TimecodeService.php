@@ -94,7 +94,7 @@ class TimecodeService
         $hasTimecode = MovieTimecode::userId($user->id)
             ->movieId($movie->id)
             ->exists();
-        if (!$hasTimecode) throw ApiException::timecodesAlreadyExist();
+        if ($hasTimecode) throw ApiException::timecodesAlreadyExist();
 
         DB::transaction(function () use ($data, $user, $movie) {
             $timecode = MovieTimecode::create([
