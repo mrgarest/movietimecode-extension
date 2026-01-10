@@ -17,9 +17,19 @@ class MovieSearchResource extends JsonResource
      */
     public function toArray(Request $request): array
     {
+        $with = $this->resource->additional['with'] ?? [];
+
         return [
-            'id' => $this->resource->id,
+            'id' => $this->when(
+                in_array('movieId', $with),
+                $this->resource->id
+            ),
             'tmdb_id' => $this->resource->tmdbId,
+            'timecode_id' => $this->when(
+                in_array('timecodeId', $with),
+                $this->resource->timecodeId
+            ),
+            'timecode_id' => $this->resource->timecodeId,
             'release_year' => $this->resource->releaseYear,
             'title' => $this->resource->title,
             'original_title' => $this->resource->originalTitle,

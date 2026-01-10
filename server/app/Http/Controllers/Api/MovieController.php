@@ -29,15 +29,19 @@ class MovieController extends Controller
         $validated = $request->validate([
             'q' => 'required|string',
             'page' => 'nullable|integer',
-            'year' => 'nullable|integer'
+            'year' => 'nullable|integer',
+            'with' => 'nullable|string',
         ]);
+
+        $with = $request->filled('with') ? explode(',', $validated['with']) : [];
 
         return new SuccessResource([
             'items' => MovieSearchResource::collection($this->movieService->searchTmdb(
                 title: trim(urldecode($validated['q'])),
                 page: $validated['page'] ?? 1,
-                year: $validated['year'] ?? null
-            ))
+                year: $validated['year'] ?? null,
+                with: $with
+            ))->additional(['with' => $with])
         ]);
     }
 

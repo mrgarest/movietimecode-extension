@@ -14,6 +14,7 @@ use App\Models\Movie;
 use App\Models\MovieCompany;
 use App\Models\MovieExternalId;
 use App\Models\MovieTranslation;
+use App\Models\User;
 use App\Services\IMDB\ImdbService;
 use App\Services\IMDB\ImdbParserService;
 use Carbon\Carbon;
@@ -40,9 +41,11 @@ class MovieService
      * @param string $title
      * @param int $page
      * @param int|null $year
+     * @param User|null $user
+     * @param array $with
      * @return array|null
      */
-    public function searchTmdb(string $title, int $page = 1, ?int $year = null): Collection
+    public function searchTmdb(string $title, int $page = 1, ?int $year = null, $with = []): Collection
     {
         $client = app(TmdbClient::class);
 
@@ -72,18 +75,39 @@ class MovieService
 
         if (!$movies->isNotEmpty()) return $movies;
 
-        // Search for movie IDs in the database
-        $movieExternalIds = MovieExternalId::externalId(EnumsMovieExternalId::TMDB)
-            ->whereIn('value', $movies->whereNull('id')->pluck('tmdbId')->toArray())
-            ->get(['value', 'movie_id'])
-            ->keyBy('value');
+        $needsMovieId = in_array('movieId', $with);
+        $needsTimecodeId = in_array('timecodeId', $with);
 
-        // Adding movie IDs to the movie search collection
-        $movies->each(function (MovieSearchData $item) use ($movieExternalIds) {
-            if ($externalIdRecord = $movieExternalIds->get($item->tmdbId)) {
-                $item->id = $externalIdRecord->movie_id;
-            }
-        });
+        if (($needsMovieId || $needsTimecodeId)) {
+            $user = auth('api')->user();
+            $tmdbIds = $movies->pluck('tmdbId')->toArray();
+
+            // Searching for movies via externalIds
+            $dbMovies = Movie::query()
+                ->select(['id'])
+                ->whereHas('externalIds', function ($query) use ($tmdbIds) {
+                    $query->externalId(EnumsMovieExternalId::TMDB)->whereIn('value', $tmdbIds);
+                })
+                ->with(['externalIds' => fn($q) => $q->externalId(EnumsMovieExternalId::TMDB)])
+                ->when($needsTimecodeId && $user, function ($q) use ($user) {
+                    $q->with(['movieTimecodes' => fn($q) => $q->select(['id', 'movie_id', 'user_id'])->userId($user->id)]);
+                })
+                ->get()
+                ->keyBy(fn($m) => $m->externalIds->first()?->value);
+
+            $movies->each(function (MovieSearchData $item) use ($dbMovies, $needsMovieId, $needsTimecodeId) {
+                if ($movie = $dbMovies->get($item->tmdbId)) {
+
+                    if ($needsMovieId) {
+                        $item->id = $movie->id;
+                    }
+
+                    if ($needsTimecodeId && $movie->relationLoaded('movieTimecodes')) {
+                        $item->timecodeId = $movie->movieTimecodes->first()?->id;
+                    }
+                }
+            });
+        }
 
         return $movies;
     }
@@ -103,8 +127,7 @@ class MovieService
         if ($movieData = Cache::get($cacheKey)) return Movie::fromCache($movieData);
 
         $movie = Movie::whereRelation('externalIds', function ($query) use ($tmdbId) {
-            $query->where('external_id', EnumsMovieExternalId::TMDB->value)
-                ->where('value', $tmdbId);
+            $query->where('external_id', EnumsMovieExternalId::TMDB->value)->where('value', $tmdbId);
         })->first();
 
         if ($movie) {

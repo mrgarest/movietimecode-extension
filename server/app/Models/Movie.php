@@ -62,6 +62,7 @@ class Movie extends Model
     {
         return $this->hasMany(MovieCompany::class);
     }
+    
     public function movieTimecodes()
     {
         return $this->hasMany(MovieTimecode::class);
