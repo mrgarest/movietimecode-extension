@@ -1,4 +1,3 @@
-import { TSegment, TTimecode, TTimecodeSearch } from "@/types/timecode";
 import { useState } from 'preact/hooks';
 import { LucideProps, Search, Settings, BadgePlus, ShieldBan, CopyCheck } from "lucide-react";
 import { ESearchButtonAction, StatusIndicator } from "@/enums/control-bar";
@@ -6,20 +5,23 @@ import { renderMovieDialog } from "./movie-dialog";
 import { renderQuestionDialog } from "./question-dialog";
 import { fetchBackground } from "@/utils/fetch";
 import config from "@/config.json";
-import { TUser } from "@/types/user";
-import { goToTab, logIn } from "@/utils/navigation";
-import { getUser } from "@/utils/auth";
+import { User } from "@/interfaces/user";
+import { goToTab, login } from "@/utils/navigation";
+import { getUser } from "@/utils/user";
 import { renderMovieCheckDialog } from "./movie-check/dialog";
 import i18n from "@/lib/i18n";
+import { MovieSearchTimecodesResponse } from '@/interfaces/movie';
+import { ErrorCode } from '@/enums/error-code';
+import { TimecodeSegment } from '@/interfaces/timecode';
 
-type RootProps = {
+interface RootProps {
     player: HTMLIFrameElement;
     movie: MovieProps;
     onTurnOffCensorship: () => void
-    onCensorship: (segments: TSegment[] | null) => void
+    onCensorship: (segments: TimecodeSegment[] | null) => void
 };
 
-type MovieProps = {
+interface MovieProps {
     title: string;
     year?: number | null;
 };
@@ -76,91 +78,51 @@ export const ControlBar = ({ player, movie, onTurnOffCensorship, onCensorship }:
         }
 
         try {
-            const data: TTimecodeSearch = await fetchBackground(
-                `${config.baseUrl}/api/v1/timecode/search?${params.toString()}`
-            ) as TTimecodeSearch;
-            if (data.success) renderMovieDialog({
-                data: data,
-                onSelected: handleGetTimecodeSegments
-            }); else if (data?.error?.code == 404) {
-                renderQuestionDialog({
-                    title: i18n.t("notFound"),
-                    description: i18n.t("notFoundTimecodeDescription"),
-                    buttons: [
-                        {
-                            text: i18n.t("addTimecodes"),
-                            style: "outline",
-                            onClick: handleTimecodeEditor
-                        },
-                        {
-                            text: i18n.t("close"),
-                            style: "primary",
-                        }
-                    ]
+            const data = await fetchBackground<MovieSearchTimecodesResponse>(
+                `${config.baseUrl}/api/v2/movies/timecodes/search?${params.toString()}`
+            );
+            if (data.success) {
+                renderMovieDialog({
+                    data: data,
+                    onSelected: handleSelectedSegment
                 });
+                return;
             }
+
+            if (data?.error?.code == ErrorCode.NOT_FOUND) renderQuestionDialog({
+                title: i18n.t("notFound"),
+                description: i18n.t("notFoundTimecodeDescription"),
+                buttons: [
+                    { text: i18n.t("addTimecodes"), style: "outline", onClick: handleTimecodeEditor },
+                    { text: i18n.t("close"), style: "primary" }
+                ]
+            });
         } catch (e) {
             if (config.debug) {
                 console.error(e);
             }
+        } finally {
+            setStatusIndicator(StatusIndicator.inactive);
+            setSearchButtonDisabled(false);
         }
-        setStatusIndicator(StatusIndicator.inactive);
-        setSearchButtonDisabled(false);
     }
 
-    /**
-     * Loads timecode segments for the selected movie.
-     * @param button Button that initiates the search.
-     * @param status Status element for displaying the state.
-     * @param timecode Timecode object selected by the user.
-     */
-    async function handleGetTimecodeSegments(
-        timecode: TTimecode
-    ) {
-        setSearchButtonDisabled(true);
-        setStatusIndicator(StatusIndicator.loader);
 
-        if (timecode.segment_count == 0) {
-            setCensorship(null);
-            setSearchButtonDisabled(false);
-            handleTimecodeUsedAnalytics(timecode.id);
+    /**
+    * Handles selected timecodes and activates censorship
+    * @param segments Selected timecode segments
+    */
+    async function handleSelectedSegment(
+        segments: TimecodeSegment[] | undefined,
+    ) {
+        if (!segments || !player) {
+            setButtonAction(ESearchButtonAction.searchTimecode);
+            setStatusIndicator(StatusIndicator.inactive);
             return;
         }
-        try {
-            const data = await fetchBackground(
-                `${config.baseUrl}/api/v1/timecode/${timecode.id}/segment`
-            );
-
-            if (data.success) {
-                setCensorship(data.segments as TSegment[]);
-                handleTimecodeUsedAnalytics(timecode.id);
-            } else {
-                setStatusIndicator(StatusIndicator.inactive);
-            }
-
-        } catch (e) {
-            if (config.debug) {
-                console.error(e);
-            }
-            setStatusIndicator(StatusIndicator.inactive);
-        }
-        setSearchButtonDisabled(false);
-    }
-
-    /**
-     * Sends a request to increase the timecode usage counter.
-     * @param id Timecode id.
-     */
-    async function handleTimecodeUsedAnalytics(
-        id: number
-    ) {
-        try {
-            await fetchBackground(`${config.baseUrl}/api/v1/timecode/${id}/analytics/used`, { method: "POST" });
-        } catch (e) {
-            if (config.debug) {
-                console.error(e);
-            }
-        }
+        setButtonAction(ESearchButtonAction.turnOffCensorship);
+        setStatusIndicator(StatusIndicator.active);
+        onCensorship(segments);
     }
 
     /**
@@ -190,31 +152,11 @@ export const ControlBar = ({ player, movie, onTurnOffCensorship, onCensorship }:
     }
 
     /**
-     * Sets the censorship state for the player.
-     * @param button Button that initiates the change.
-     * @param status Status element for displaying the state.
-     * @param segments List of timecode segments.
-     */
-    function setCensorship(
-        segments: TSegment[] | null
-    ) {
-        if (player == null) {
-            setButtonAction(ESearchButtonAction.searchTimecode);
-            setStatusIndicator(StatusIndicator.inactive);
-            return;
-        }
-
-        setButtonAction(ESearchButtonAction.turnOffCensorship);
-        setStatusIndicator(StatusIndicator.active);
-        onCensorship(segments);
-    }
-
-    /**
      * Opens the timecode editor if the user is authorized.
      * If the user is not authorized, a dialog window appears with a suggestion to log in.
      */
     const handleTimecodeEditor = async () => {
-        const user: TUser | undefined = await getUser();
+        const user: User | undefined = await getUser();
 
         if (user?.accessToken) {
             const params = new URLSearchParams();
@@ -234,9 +176,9 @@ export const ControlBar = ({ player, movie, onTurnOffCensorship, onCensorship }:
                     style: "outline",
                 },
                 {
-                    text: i18n.t("logIn"),
+                    text: i18n.t("login"),
                     style: "primary",
-                    onClick: () => logIn()
+                    onClick: () => login()
                 }
             ]
         });

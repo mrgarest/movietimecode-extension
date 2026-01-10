@@ -1,6 +1,10 @@
 import { fetchBackground } from "@/utils/fetch";
 import config from "config";
-import { TUser } from "@/types/user";
+import { User } from "@/interfaces/user";
+import { ServerResponse } from "@/interfaces/response";
+
+// Source identifier for authentication messages
+const SOURCE = "movietimecode:extension";
 
 /**
  * Sends an error message and clears user from storage.
@@ -9,12 +13,27 @@ const postError = () => {
   chrome.storage.sync.set({ user: undefined });
   window.postMessage(
     {
-      source: "auth",
+      source: SOURCE,
       type: "error",
     },
     "*"
   );
 };
+
+// Interface for authentication extension response
+interface AuthExtension extends ServerResponse {
+  id: number;
+  role_id: number;
+  username: string;
+  picture?: string | null;
+  access_token: string;
+  expires_at?: number | null;
+  twitch?: {
+    access_token?: string | null;
+    refresh_token?: string | null;
+    expires_at?: number | null;
+  } | null;
+}
 
 /**
  * Handles authentication message from window.
@@ -22,7 +41,7 @@ const postError = () => {
  */
 const onMessage = async (event: any) => {
   if (event.source !== window) return;
-  if (event.data?.source !== "auth") return;
+  if (event.data?.source !== "movietimecode:server") return;
   const auth = event.data?.auth;
   if (!auth?.id || !auth?.token) {
     return;
@@ -30,8 +49,11 @@ const onMessage = async (event: any) => {
   window.removeEventListener("message", onMessage);
 
   try {
-    const data = await fetchBackground(
-      `${config.baseUrl}/api/v1/auth?id=${auth.id}&token=${auth.token}`
+    const data = await fetchBackground<AuthExtension>(
+      `${config.baseUrl}/api/v2/auth/extension?id=${auth.id}&token=${auth.token}`,
+      {
+        method: "POST",
+      }
     );
     if (data.success) {
       chrome.storage.sync.set(
@@ -53,12 +75,12 @@ const onMessage = async (event: any) => {
                     expiresAt: data.twitch?.expires_at,
                   }
                 : null,
-          } as TUser,
+          } as User,
         },
         () => {
           window.postMessage(
             {
-              source: "auth",
+              source: SOURCE,
               type: "success",
             },
             "*"
@@ -80,6 +102,6 @@ const onMessage = async (event: any) => {
 /**
  * Adds message listener if on auth callback page.
  */
-if (location.href.includes("/login/callback")) {
+if (location.href.includes("/auth/callback")) {
   window.addEventListener("message", onMessage);
 }

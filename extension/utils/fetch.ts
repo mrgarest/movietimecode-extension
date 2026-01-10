@@ -1,5 +1,5 @@
 import config from "config";
-import { TMovieSearch } from "@/types/movie";
+import { MovieSearchResponse } from "@/interfaces/movie";
 
 /**
  * Sends a request to the background script.
@@ -7,13 +7,13 @@ import { TMovieSearch } from "@/types/movie";
  * @param options Request options (method, headers, etc.).
  * @returns The result of the request.
  */
-export const fetchBackground = async (
+export const fetchBackground = async <T>(
   url: string,
   options: RequestInit = {
     method: "GET",
   }
-) => {
-  return new Promise<any>((resolve, reject) => {
+): Promise<T> => {
+  return new Promise<T>((resolve, reject) => {
     chrome.runtime.sendMessage(
       { action: "fetchData", url, options },
       (response) =>
@@ -36,12 +36,12 @@ export const fetchSearchMovie = async (
   query: string,
   page: number,
   year: number | null
-): Promise<TMovieSearch> => {
-  const url = new URL("/api/v1/movie/search", config.baseUrl);
+): Promise<MovieSearchResponse> => {
+  const url = new URL("/api/v2/movies/search", config.baseUrl);
   url.searchParams.set("q", query);
   url.searchParams.set("page", String(page));
+  url.searchParams.set("with", "timecodeId");
   if (year !== null) url.searchParams.set("year", String(year));
 
-  const response = await fetchBackground(url.toString());
-  return response as TMovieSearch;
+  return await fetchBackground<MovieSearchResponse>(url.toString());
 };

@@ -1,11 +1,11 @@
-
 export type TButtonStyle = "primary" | "outline";
 
-type RootProps = {
+interface RootProps {
     style?: TButtonStyle
     text: string;
-    onClick?: () => void | undefined
+    onClick?: () => void | Promise<void> | undefined;
 }
+
 export const Button = ({ style = "primary", text, onClick = undefined }: RootProps) => {
     return (
         <div className={`mt-button mt-${style}`} onClick={onClick}>

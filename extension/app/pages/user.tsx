@@ -1,18 +1,18 @@
 import { Button } from "@/app/components/ui/button";
-import { logIn } from "@/utils/navigation";
+import { login } from "@/utils/navigation";
 import { useEffect, useRef, useState } from "react";
-import { TUser } from "types/user";
-import { getUser, logOut } from "@/utils/auth";
+import { User } from "@/interfaces/user";
+import { getUser, logout } from "@/utils/user";
 import config from "config";
 import i18n from "@/lib/i18n";
 import { cn } from "@/lib/utils";
 
-export default function User() {
-    const [user, setUser] = useState<TUser | null>(null);
+export default function UserPage() {
+    const [user, setUser] = useState<User | null>(null);
     const intervalRef = useRef<NodeJS.Timeout | null>(null);
 
     const handleLogIn = async () => {
-        logIn();
+        login();
 
         if (intervalRef.current) {
             clearInterval(intervalRef.current);
@@ -20,7 +20,7 @@ export default function User() {
 
         let count: number = 0;
         intervalRef.current = setInterval(async () => {
-            const user: TUser | undefined = await getUser();
+            const user: User | undefined = await getUser();
             if (user) {
                 setUser(user);
                 if (intervalRef.current) {
@@ -37,7 +37,7 @@ export default function User() {
     };
 
     const handleLogOut = async () => {
-        await logOut();
+        await logout();
         setUser(null);
     };
 
@@ -47,7 +47,7 @@ export default function User() {
          */
         const init = async () => {
             try {
-                const user: TUser | undefined = await getUser();
+                const user: User | undefined = await getUser();
                 if (!user) {
                     return;
                 }
@@ -82,7 +82,7 @@ export default function User() {
                     <img className="bg-primary/10 size-12 flex items-center justify-center rounded-full" src={user.picture ?? "/images/avatar.png"} />
                     <div className="text-xl text-foreground font-bold">{user.username}</div>
                 </div>
-                <Button variant="destructive" onClick={handleLogOut}>{i18n.t("logOut")}</Button>
+                <Button variant="destructive" onClick={handleLogOut}>{i18n.t("logout")}</Button>
             </div>}
         </div>
     );

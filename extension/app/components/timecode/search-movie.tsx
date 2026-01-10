@@ -1,24 +1,24 @@
 import { fetchSearchMovie } from "@/utils/fetch";
 import config from "config";
 import { useEffect, useState } from "react";
-import { TMovieSearch, TMovieSearchItem } from "@/types/movie";
-import { logOut } from "@/utils/auth";
+import { MovieSearchResponse, MovieSearchItem } from "@/interfaces/movie";
+import { logout } from "@/utils/user";
 import i18n from "@/lib/i18n";
 
-type RootProps = {
+interface RootProps {
     query: string;
     year?: number | null;
-    onSelected: (item: TMovieSearchItem) => void;
+    onSelected: (item: MovieSearchItem) => void;
     onMessage: (msg: string) => void;
     onHideContent: (b: boolean) => void;
     onLoading: (b: boolean) => void;
 };
 
-export default function SearchMovie({ query, year = null, onSelected, onMessage, onHideContent, onLoading }: RootProps) {
+export default function SearchMoviePage({ query, year = null, onSelected, onMessage, onHideContent, onLoading }: RootProps) {
     const [page, setPage] = useState<number>(1);
     const [isLoading, setIsLoading] = useState<boolean>(false);
     const [isEnabledSearch, setEnabledSearch] = useState<boolean>(true);
-    const [movies, setMovies] = useState<TMovieSearchItem[]>([]);
+    const [movies, setMovies] = useState<MovieSearchItem[]>([]);
 
     /**
      * Searches for movies on the server.
@@ -32,7 +32,7 @@ export default function SearchMovie({ query, year = null, onSelected, onMessage,
         if (!isEnabledSearch || isLoading) return;
         setIsLoading(true);
         try {
-            const response: TMovieSearch = await fetchSearchMovie(query, page, year);
+            const response: MovieSearchResponse = await fetchSearchMovie(query, page, year);
 
             if (response.success) {
                 if (response.items !== null && response.items.length > 0) {
@@ -50,7 +50,7 @@ export default function SearchMovie({ query, year = null, onSelected, onMessage,
             } else switch (response.error?.code) {
                 case 'ACCESS_TOKEN_INVALID':
                 case 'USER_NOT_FOUND':
-                    await logOut();
+                    await logout();
                     onMessage(i18n.t("accessErrorPleaseTryAgain"));
                     break;
                 case 'USER_DEACTIVATED':

@@ -1,20 +1,20 @@
-import { TMovieSearch, TMovieSearchItem } from "@/types/movie";
+import { MovieSearchResponse, MovieSearchItem } from "@/interfaces/movie";
 import { useEffect, useState } from "preact/hooks";
 import config from "config";
 import { fetchSearchMovie } from "@/utils/fetch";
 import i18n from "@/lib/i18n";
 
-type RootProps = {
+interface RootProps {
     title: string;
     year?: number | null;
-    onSelected: (item: TMovieSearchItem) => void;
+    onSelected: (item: MovieSearchItem) => void;
     onError: (msg: string) => void;
     onLoading: (b: boolean) => void;
 };
 
 export default function SearchMovie({ title, year = null, onSelected, onError, onLoading }: RootProps) {
     const [isLoading, setIsLoading] = useState<boolean>(false);
-    const [movies, setMovies] = useState<TMovieSearchItem[]>([]);
+    const [movies, setMovies] = useState<MovieSearchItem[]>([]);
 
     /**
      * Searches for movies by query and year.
@@ -25,7 +25,7 @@ export default function SearchMovie({ title, year = null, onSelected, onError, o
         if (isLoading) return;
         setIsLoading(true);
         try {
-            const response: TMovieSearch = await fetchSearchMovie(query, 1, year);
+            const response = await fetchSearchMovie(query, 1, year);
 
             if (response.success) {
                 if (response.items !== null && response.items.length > 0) {

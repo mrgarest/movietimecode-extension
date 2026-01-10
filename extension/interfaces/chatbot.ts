@@ -1,4 +1,4 @@
-export type TChatbotCmmand = {
+export interface ChatbotCmmand {
   enabled: boolean;
   command: string;
   action: string;

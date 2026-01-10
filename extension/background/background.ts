@@ -1,6 +1,6 @@
 import config from "config";
-import { TUser } from "@/types/user";
-import { getUser } from "@/utils/auth";
+import { User } from "@/interfaces/user";
+import { getUser } from "@/utils/user";
 
 /**
  * Opens the extension page when the browser action icon is clicked.
@@ -73,7 +73,7 @@ const fetchData = (
         ...options.headers,
       };
 
-      const user: TUser | undefined = await getUser();
+      const user: User | undefined = await getUser();
 
       if (user?.accessToken) {
         options.headers["Authorization"] = `Bearer ${user.accessToken}`;

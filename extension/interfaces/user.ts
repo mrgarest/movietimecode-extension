@@ -1,14 +1,15 @@
-export type TUser = {
+export interface User {
   id: number;
   roleId: number;
   username: string;
   picture?: string | null;
   accessToken: string;
   expiresAt?: number | null;
-  twitch?: TUserTwitch | null;
-};
-export type TUserTwitch = {
+  twitch?: UserTwitch | null;
+}
+
+export interface UserTwitch {
   accessToken?: string | null;
   refreshToken?: string | null;
   expiresAt?: number | null;
-};
+}

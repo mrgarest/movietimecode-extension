@@ -1,29 +1,29 @@
 import { BlurPower, TimecodeAction, TimecodeTag } from "@/enums/timecode";
-import { TSegment } from "@/types/timecode";
 import { StorageDefault } from "@/utils/storage-options";
 import { render } from "preact";
 import config from "config";
 import { ControlBar } from "./components/control-bar";
-import { TSettings, TSettingsOBSClientNull } from "@/types/storage";
+import { Settings, SettingsOBSClientNull } from "@/interfaces/storage";
 import { waitForDOMContentLoaded, waitForElement } from "@/utils/page";
-import OBSClient, { OBSType, TScene } from "@/lib/obs-client";
+import OBSClient, { OBSType, Scene } from "@/lib/obs-client";
 import { renderQuestionDialog } from "./components/question-dialog";
 import i18n from "@/lib/i18n";
 import { playAlerSound } from "@/utils/alert";
 import { censorshipActionLog } from "@/utils/log";
 import ChatClient, { ChatMessage } from "@/lib/chat-client";
-import { TUser } from "@/types/user";
-import { getUser, isStreamLive, isTwitchTokenExpires, refreshTwitchToken } from "@/utils/auth";
-import { TChatbotCmmand } from "@/types/chatbot";
+import { User } from "@/interfaces/user";
+import { getUser, isStreamLive, isTwitchTokenExpires, refreshTwitchToken } from "@/utils/user";
+import { ChatbotCmmand } from "@/interfaces/chatbot";
 import { ChatbotAccess, ChatbotAction } from "@/enums/chatbot";
 import { secondsToTime } from "@/utils/format";
 import { isPlayerVisible, playerInvisible, playerMute, playerPause, playerPlay, playerSeek, playerUnmute, playerVisible } from "@/utils/player";
+import { TimecodeSegment } from "@/interfaces/timecode";
 
 let isHotkeyPressed: boolean = false;
 let isCensorshipEnabled: boolean = false;
 let isChatConnected: boolean = false;
-let user: TUser | undefined = undefined;
-let settings: TSettings;
+let user: User | undefined = undefined;
+let settings: Settings;
 let nudity: TimecodeAction;
 let violence: TimecodeAction;
 let sensitiveExpressions: TimecodeAction;
@@ -36,14 +36,14 @@ let movie: {
 
 let neededOBSClient: boolean = false;
 let obsClient: OBSClient | null = null;
-let mainSceneOBS: TScene | null;
-let obsCensorScene: TScene | null;
+let mainSceneOBS: Scene | null;
+let obsCensorScene: Scene | null;
 
 type Thtml = HTMLIFrameElement | undefined;
 let player: Thtml = undefined;
 
-let timecodeSegments: TSegment[] | null = null;
-let activeCensorshipActions: TSegment[] = [];
+let timecodeSegments: TimecodeSegment[] | null = null;
+let activeCensorshipActions: TimecodeSegment[] = [];
 
 let currentMovieTime: number = 0;
 
@@ -53,7 +53,7 @@ let isTryRefreshTwitchToken: boolean = false;
 let isChatbotCommandStoped: boolean = false;
 let chatbotEnabled: boolean = false;
 let chatbotConnectStreamLive: boolean = false;
-let chatbotCommands: TChatbotCmmand[] = [];
+let chatbotCommands: ChatbotCmmand[] = [];
 
 const playerContentCensorshipEnabled: { blur: boolean; hide: boolean; obsSceneChange: boolean } = {
     blur: false,
@@ -74,7 +74,7 @@ chrome.storage.onChanged.addListener((changes, namespace) => {
  * @param isOnChanged Indicates if the function was called due to a settings change.
  * @returns Updated settings object.
  */
-const handleSettings = (settings: TSettings, isOnChanged: boolean) => {
+const handleSettings = (settings: Settings, isOnChanged: boolean) => {
 
     nudity = (settings.nudity as TimecodeAction) ?? StorageDefault.nudity;
 
@@ -95,7 +95,7 @@ const handleSettings = (settings: TSettings, isOnChanged: boolean) => {
     chatbotEnabled = (settings.chatbotEnabled as boolean) ?? StorageDefault.chatbotEnabled;
     chatbotConnectStreamLive = (settings.chatbotConnectStreamLive as boolean) ?? StorageDefault.chatbotConnectStreamLive;
     if (chatbotEnabled) {
-        chatbotCommands = ((settings.chatbotCommands as TChatbotCmmand[]) ?? StorageDefault.chatbotCommands)
+        chatbotCommands = ((settings.chatbotCommands as ChatbotCmmand[]) ?? StorageDefault.chatbotCommands)
             .filter(cmd => cmd != null && cmd.command && cmd.action && cmd.access);
 
     } else if (isChatConnected && chatClient) {
@@ -213,7 +213,7 @@ const setHeadrStyles = () => {
  *
  * @param segments
  */
-function handleCensorship(segments: TSegment[] | null) {
+function handleCensorship(segments: TimecodeSegment[] | null) {
     timecodeSegments = segments;
     isCensorshipEnabled = true;
 
@@ -292,7 +292,7 @@ async function handleChatbot() {
         const message = msg.message.trim().toLocaleLowerCase();
 
         // Search for the desired command
-        const command: TChatbotCmmand | undefined = chatbotCommands.find((cmd) => {
+        const command: ChatbotCmmand | undefined = chatbotCommands.find((cmd) => {
             if (!cmd.enabled) return false;
             return cmd.command.startsWith("!") ? message.startsWith(cmd.command) : message.includes(cmd.command);
         });
@@ -405,7 +405,7 @@ function handleTimePlayer(time: number) {
 
     const timeBuffer: number = (settings.timeBuffer as number) || StorageDefault.timeBuffer;
 
-    const segments: TSegment[] = timecodeSegments.filter(
+    const segments: TimecodeSegment[] = timecodeSegments.filter(
         (segment) =>
             time >= segment.start_time - timeBuffer &&
             time < segment.end_time + timeBuffer
@@ -465,7 +465,7 @@ const getActionForTag = (tag: TimecodeTag): TimecodeAction | null => {
  * Establishes a connection to the OBS client, if possible
  */
 async function connectOBS() {
-    const obsClientSettings: TSettingsOBSClientNull = (settings.obsClient as TSettingsOBSClientNull) || StorageDefault.obsClient;
+    const obsClientSettings: SettingsOBSClientNull = (settings.obsClient as SettingsOBSClientNull) || StorageDefault.obsClient;
     const obsCensorSceneNmae: string | null = (settings.obsCensorScene as string | null) || StorageDefault.obsCensorScene;
 
     try {
@@ -555,7 +555,7 @@ async function setPlayerCensorshipAction({
     isCensored: boolean;
     time: number,
     action: TimecodeAction | null;
-    segment: TSegment;
+    segment: TimecodeSegment;
 }) {
     if (!player) return;
 

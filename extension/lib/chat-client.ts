@@ -16,7 +16,7 @@ interface Options {
   accessToken: string;
 }
 
-export type ChatMessage = {
+export interface ChatMessage {
   id: string;
   timestamp: number;
   channel: {

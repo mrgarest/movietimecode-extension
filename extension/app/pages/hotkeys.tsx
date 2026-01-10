@@ -3,7 +3,7 @@ import SettingsCard from '@/app/components/settings-card';
 import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from "@/app/components/ui/select"
 import { TimecodeAction } from '@/enums/timecode';
 import { StorageDefault } from '@/utils/storage-options';
-import { TSettings } from '@/types/storage'
+import { Settings } from '@/interfaces/storage'
 import config from "config";
 import i18n from '@/lib/i18n';
 import { Button } from '../components/ui/button';
@@ -11,15 +11,15 @@ import { Button } from '../components/ui/button';
 const altKey: string = /Macintosh|MacIntel|MacPPC|Mac68K/i.test(navigator.userAgent) ? "⌥" : "Alt";
 
 
-export default function Hotkeys() {
-    const [settings, setSettings] = useState<TSettings>({});
+export default function HotkeysPage() {
+    const [settings, setSettings] = useState<Settings>({});
     const [playerContentCensorshipCommand, setPlayerContentCensorshipCommand] = useState<TimecodeAction>(StorageDefault.playerContentCensorshipCommand);
     const [playerContentCensorshipHotkey, setPlayerContentCensorshipHotkey] = useState<string>(`${altKey}+X`);
 
     useEffect(() => {
         if (chrome?.storage?.sync) {
             chrome.storage.sync.get('settings', (result) => {
-                const curentSettings: TSettings = result.settings ?? {};
+                const curentSettings: Settings = result.settings ?? {};
                 curentSettings.playerContentCensorshipCommand = curentSettings.playerContentCensorshipCommand as TimecodeAction ?? StorageDefault.playerContentCensorshipCommand;
 
                 setSettings(curentSettings);
@@ -42,7 +42,7 @@ export default function Hotkeys() {
         }
     }, []);
 
-    const updateSettings = (updates: Partial<TSettings>) => {
+    const updateSettings = (updates: Partial<Settings>) => {
         setSettings((prev) => {
             const newSettings = { ...prev, ...updates };
             chrome.storage.sync.set({ settings: newSettings }, () => { });
@@ -56,7 +56,7 @@ export default function Hotkeys() {
         updateSettings({ playerContentCensorshipCommand: n as TimecodeAction });
     };
 
-    const getSelectItemBehavior = (settings: TSettings) => [
+    const getSelectItemBehavior = (settings: Settings) => [
         { disabled: false, value: TimecodeAction.noAction, text: i18n.t("inaction") },
         { disabled: false, value: TimecodeAction.blur, text: i18n.t("blur") },
         { disabled: false, value: TimecodeAction.hide, text: i18n.t("hide") },

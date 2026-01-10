@@ -261,6 +261,7 @@
 /*********************** dialog movie ***********************/
 
 .mt-dialog .mt-dialog-container.mt-dialog-movie {
+  position: relative;
   display: grid;
   grid-template-columns: auto minmax(15rem, 20rem);
   align-items: flex-start;
@@ -423,25 +424,6 @@
   opacity: 0.6;
 }
 
-.mt-dialog-mc .loading-spinner {
-  position: absolute;
-  inset: 0;
-  z-index: 10;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  pointer-events: auto;
-  overflow: hidden;
-  padding: 4rem 0;
-}
-
-.mt-dialog-mc .loading-spinner svg {
-  width: 4.5rem;
-  height: 4.5rem;
-  animation: rotation 1s linear infinite;
-  fill: white;
-}
-
 .mt-dialog-mc .mt-search-list {
   display: flex;
   flex-direction: column;
@@ -553,6 +535,30 @@
 
 .mt-dialog-mc .mt-check .mt-info-grid a:hover {
   opacity: 0.7;
+}
+
+/*********************** loading ***********************/
+
+.loading-spinner {
+  position: absolute;
+  inset: 0;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: auto;
+  overflow: hidden;
+  padding: 4rem 0;
+}
+.loading-spinner.bg-dark {
+  background-color: #0a0c0dba;
+}
+
+.loading-spinner svg {
+  width: 4.5rem;
+  height: 4.5rem;
+  animation: rotation 1s linear infinite;
+  fill: white;
 }
 
 /*********************** player blur ***********************/

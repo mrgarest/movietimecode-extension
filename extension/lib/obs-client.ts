@@ -7,7 +7,7 @@ export enum OBSType {
   obsstudio = "obsstudio",
 }
 
-export type TScene = {
+export interface Scene {
   id: string;
   name: string;
 };
@@ -40,12 +40,12 @@ export default class OBSClient {
   };
 
   private getScenePromise?: {
-    resolve: (scenes: TScene[]) => void;
+    resolve: (scenes: Scene[]) => void;
     reject: (reason?: any) => void;
   };
 
   private getActiveScenePromise?: {
-    resolve: (scenes: TScene | null) => void;
+    resolve: (scenes: Scene | null) => void;
     reject: (reason?: any) => void;
   };
 
@@ -281,9 +281,9 @@ export default class OBSClient {
 
   /**
    * Gets a list of scenes from the OBS.
-   * @returns Returns an array of scenes (TScene[]).
+   * @returns Returns an array of scenes (Scene[]).
    */
-  public getScene(): Promise<TScene[]> {
+  public getScene(): Promise<Scene[]> {
     return new Promise((resolve, reject) => {
       this.getScenePromise = { resolve, reject };
       const requestId = this.createId("getScene");
@@ -321,17 +321,17 @@ export default class OBSClient {
    */
   public async findScene(
     name: string,
-    scenes: TScene[] = []
-  ): Promise<TScene | null> {
+    scenes: Scene[] = []
+  ): Promise<Scene | null> {
     if (scenes.length === 0) scenes = await this.getScene();
     return scenes.find((f: any) => f.name == name) || null;
   }
 
   /**
    * Receives an active scene from OBS.
-   * @returns Returns the currently active scene (TScene) or null.
+   * @returns Returns the currently active scene (Scene) or null.
    */
-  public getActiveScene(): Promise<TScene | null> {
+  public getActiveScene(): Promise<Scene | null> {
     return new Promise((resolve, reject) => {
       this.getActiveScenePromise = { resolve, reject };
       const requestId = this.createId("getActiveScene");
@@ -366,7 +366,7 @@ export default class OBSClient {
    * @param scene The scene you want to make active.
    * @returns Returns true if the scene is successfully installed, or false if it fails.
    */
-  public setActiveScene(scene: TScene): Promise<boolean> {
+  public setActiveScene(scene: Scene): Promise<boolean> {
     return new Promise((resolve, reject) => {
       this.setActiveScenePromise = { resolve, reject };
       const requestId = this.createId("setActiveScene");

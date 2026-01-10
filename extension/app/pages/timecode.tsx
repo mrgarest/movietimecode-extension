@@ -1,24 +1,24 @@
 import { useLocation } from "react-router-dom";
 import NotFound from "./not-found";
 import config from "config";
-import { TUser } from "@/types/user";
+import { User } from "@/interfaces/user";
 import { useEffect, useState } from "react";
 import { Button } from "@/app/components/ui/button";
-import { logIn } from "@/utils/navigation";
+import { login } from "@/utils/navigation";
 import { cn } from "@/lib/utils";
-import { TMovieSearchItem } from "@/types/movie";
+import { MovieSearchItem } from "@/interfaces/movie";
 import { Footer } from "@/app/components/footer";
-import { getUser } from "@/utils/auth";
-import TimecodeEditor from "@/app/components/timecode/timecode-editor";
-import SearchMovie from "@/app/components/timecode/search-movie";
+import { getUser } from "@/utils/user";
 import i18n from "@/lib/i18n";
+import TimecodeEditorPage from "@/app/components/timecode/timecode-editor";
+import SearchMoviePage from "@/app/components/timecode/search-movie";
 
 export default function TimecodePage() {
     const [isLoading, setLoading] = useState<boolean>(true);
     const [finalMessage, setFinalMessage] = useState<string | null>(null);
     const [isHideContent, setHideContent] = useState<boolean>(true);
     const [step, setStep] = useState<number>(0);
-    const [movie, setMovie] = useState<TMovieSearchItem | null>(null);
+    const [movie, setMovie] = useState<MovieSearchItem | null>(null);
 
     // Extracts parameters from URL
     const location = useLocation();
@@ -39,7 +39,7 @@ export default function TimecodePage() {
          */
         const init = async () => {
             try {
-                const user: TUser | undefined = await getUser();
+                const user: User | undefined = await getUser();
                 if (!user) {
                     setHideContent(false);
                     setLoading(false);
@@ -62,7 +62,7 @@ export default function TimecodePage() {
      * Saves the selected movie and proceeds to the next step.
      * @param movie
      */
-    const handleSelectedMovie = (movie: TMovieSearchItem) => {
+    const handleSelectedMovie = (movie: MovieSearchItem) => {
         setMovie(movie);
         setStep(2);
     };
@@ -79,10 +79,10 @@ export default function TimecodePage() {
                 {step == 0 && <div className="space-y-4 text-center">
                     <div className="text-2xl text-foreground font-bold">{i18n.t("authorizationRequired")}</div>
                     <div className="text-base text-foreground">{i18n.t("authorizationRequiredDescription")}</div>
-                    <Button onClick={() => logIn()}>{i18n.t("logIn")}</Button>
+                    <Button onClick={() => login()}>{i18n.t("login")}</Button>
                 </div>
                 }
-                {step == 1 && <SearchMovie
+                {step == 1 && <SearchMoviePage
                     query={query}
                     year={Number(year) || null}
                     onSelected={handleSelectedMovie}
@@ -90,7 +90,7 @@ export default function TimecodePage() {
                     onHideContent={setHideContent}
                     onLoading={setLoading} />
                 }
-                {step == 2 && movie && <TimecodeEditor
+                {step == 2 && movie && <TimecodeEditorPage
                     movie={movie}
                     onMessage={setFinalMessage}
                     onLoading={setLoading} />

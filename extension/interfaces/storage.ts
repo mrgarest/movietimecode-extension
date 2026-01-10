@@ -1,9 +1,9 @@
 import { BlurPower, TimecodeAction } from "@/enums/timecode";
-import { TChatbotCmmand } from "./chatbot";
+import { ChatbotCmmand } from "./chatbot";
 
-export type TSettingsOBSClientNull = TSettingsOBSClient | null;
+export type SettingsOBSClientNull = SettingsOBSClient | null;
 
-export type TSettings = {
+export interface Settings {
   token?: string;
   timeBuffer?: number;
   blurPower?: BlurPower;
@@ -11,15 +11,15 @@ export type TSettings = {
   sexualContentWithoutNudity?: TimecodeAction;
   violence?: TimecodeAction;
   sensitiveExpressions?: TimecodeAction;
-  obsClient?: TSettingsOBSClientNull;
+  obsClient?: SettingsOBSClientNull;
   obsCensorScene?: string | null;
   playerContentCensorshipCommand?: TimecodeAction;
   chatbotEnabled?: boolean;
   chatbotConnectStreamLive?: boolean;
-  chatbotCommands?: TChatbotCmmand[];
+  chatbotCommands?: ChatbotCmmand[];
 };
 
-export type TSettingsOBSClient = {
+export interface SettingsOBSClient {
   type: string;
   host: string;
   port: number;

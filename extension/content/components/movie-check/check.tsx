@@ -1,4 +1,4 @@
-import { TImdbContentRating, TMovieCheck, TMovieCompany, TMovieSearchItem } from "@/types/movie";
+import { ImdbContentRating, MovieCheckResponse , MovieCheckCompany, MovieSearchItem } from "@/interfaces/movie";
 import { useEffect, useState } from "preact/hooks";
 import config from "config";
 import { fetchBackground } from "@/utils/fetch";
@@ -7,30 +7,26 @@ import { uk } from 'date-fns/locale';
 import { ImdbContentRatingId } from "@/enums/imdb";
 import i18n from "@/lib/i18n";
 
-type RootProps = {
-    movie: TMovieSearchItem;
+interface RootProps {
+    movie: MovieSearchItem;
     onLoading: (b: boolean) => void;
     onError: (msg: string) => void;
 };
 
-export default function MovieCheck({ movie, onLoading, onError }: RootProps) {
+export default function Check({ movie, onLoading, onError }: RootProps) {
     const [isLoading, setIsLoading] = useState<boolean>(false);
-    const [movieCheck, setMovieCheck] = useState<TMovieCheck | undefined>(undefined);
+    const [movieCheck, setMovieCheck] = useState<MovieCheckResponse | undefined>(undefined);
 
     /**
      * Initialize movie check data from API.
      * @param movie - movie object
      */
-    const initCheck = async (movie: TMovieSearchItem) => {
+    const initCheck = async (movie: MovieSearchItem) => {
         if (isLoading) return;
         onLoading(true);
         setIsLoading(true);
         try {
-            const url = new URL("/api/v1/movie/check", config.baseUrl);
-            if (movie.id !== null) url.searchParams.set("id", String(movie.id));
-            else if (movie.tmdb_id !== null) url.searchParams.set("tmdb_id", String(movie.tmdb_id));
-
-            const response: TMovieCheck = await fetchBackground(url.toString()) as TMovieCheck;
+            const response = await fetchBackground<MovieCheckResponse>(`${config.baseUrl}/api/v2/movies/${movie.tmdb_id}/check`);
             response.success ? setMovieCheck(response) : onError(i18n.t("checkFailed"));
         } catch (e) {
             if (config.debug) {
@@ -110,7 +106,7 @@ const MovieCompany = ({
     companies = null
 }: {
     text: string,
-    companies: TMovieCompany[] | null
+    companies: MovieCheckCompany[] | null
 }) => {
     return (
         <>
@@ -168,7 +164,7 @@ const ContentRating = ({
 }: {
     id: string
     contentId: ImdbContentRatingId
-    contentRatings: TImdbContentRating[]
+    contentRatings: ImdbContentRating[]
     isLink?: boolean
 }) => {
     let title: string;
@@ -198,7 +194,7 @@ const ContentRating = ({
     let color: string | undefined = undefined;
     let level: string | undefined;
 
-    const contentRating: TImdbContentRating | undefined = contentRatings.find(item => contentId == item.content_id);
+    const contentRating: ImdbContentRating | undefined = contentRatings.find(item => contentId == item.content_id);
 
     if (contentRating != null) {
         switch (contentRating.level) {

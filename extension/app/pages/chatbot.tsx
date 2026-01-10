@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import SettingsCard from '@/app/components/settings-card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/app/components/ui/select"
 import { StorageDefault } from '@/utils/storage-options';
-import { TSettings } from '@/types/storage'
+import { Settings } from '@/interfaces/storage'
 import config from "config";
 import i18n from '@/lib/i18n';
 import { Button } from '../components/ui/button';
@@ -14,7 +14,7 @@ import { useFieldArray, useForm } from 'react-hook-form';
 import { Input } from '../components/ui/input';
 import { ChatbotAccess, ChatbotAction } from '@/enums/chatbot';
 import { CirclePlus, Trash2 } from 'lucide-react';
-import { TChatbotCmmand } from '@/types/chatbot';
+import { ChatbotCmmand } from '@/interfaces/chatbot';
 import toast from "react-hot-toast";
 
 /**
@@ -35,8 +35,8 @@ const formSchema = z.object({
     ),
 })
 
-export default function Chatbot() {
-    const [settings, setSettings] = useState<TSettings>({});
+export default function ChatbotPage() {
+    const [settings, setSettings] = useState<Settings>({});
     const [chatbotEnabled, setChatbotEnabled] = useState<boolean>(StorageDefault.chatbotEnabled);
     const [connectStreamLive, setConnectStreamLive] = useState<boolean>(StorageDefault.chatbotConnectStreamLive);
 
@@ -57,10 +57,10 @@ export default function Chatbot() {
     useEffect(() => {
         if (chrome?.storage?.sync) {
             chrome.storage.sync.get('settings', (result) => {
-                const curentSettings: TSettings = result.settings ?? {};
+                const curentSettings: Settings = result.settings ?? {};
                 curentSettings.chatbotEnabled = curentSettings.chatbotEnabled as boolean ?? StorageDefault.chatbotEnabled;
                 curentSettings.chatbotConnectStreamLive = curentSettings.chatbotConnectStreamLive as boolean ?? StorageDefault.chatbotConnectStreamLive;
-                curentSettings.chatbotCommands = curentSettings.chatbotCommands as TChatbotCmmand[] ?? StorageDefault.chatbotCommands;
+                curentSettings.chatbotCommands = curentSettings.chatbotCommands as ChatbotCmmand[] ?? StorageDefault.chatbotCommands;
 
                 setSettings(curentSettings);
 
@@ -73,7 +73,7 @@ export default function Chatbot() {
         }
     }, []);
 
-    const updateSettings = (updates: Partial<TSettings>) => {
+    const updateSettings = (updates: Partial<Settings>) => {
         setSettings((prev) => {
             const newSettings = { ...prev, ...updates };
             chrome.storage.sync.set({ settings: newSettings }, () => { });
@@ -95,7 +95,7 @@ export default function Chatbot() {
     * Saves commands
     */
     const onSubmit = async (values: z.infer<typeof formSchema>) => {
-        updateSettings({ chatbotCommands: values.commands as TChatbotCmmand[] });
+        updateSettings({ chatbotCommands: values.commands as ChatbotCmmand[] });
         toast.success(i18n.t("changesSaved"));
     };
 

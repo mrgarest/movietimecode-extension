@@ -2,7 +2,7 @@ import { playAlerSound } from "@/utils/alert";
 import { Button, TButtonStyle } from "./ui/button";
 import { removeDialog, renderDialog } from "@/utils/dialog";
 
-type RootProps = {
+interface RootProps {
     id?: string;
     sound?: boolean;
     title: string;
@@ -11,7 +11,7 @@ type RootProps = {
     onDismiss?: () => void
 };
 
-type QuestionDialogButton = {
+interface QuestionDialogButton {
     text: string;
     style?: TButtonStyle;
     dismiss?: boolean;

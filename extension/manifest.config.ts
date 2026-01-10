@@ -45,8 +45,8 @@ export default function getManifest() {
       },
       {
         matches: [
-          `${baseUrl}/login/callback*`,
-          ...(config.debug === true ? ["*://localhost/login/callback*"] : []),
+          `${baseUrl}/auth/callback*`,
+          ...(config.debug === true ? ["*://localhost/auth/callback*"] : []),
         ],
         js: ["assets/wa.js"],
         run_at: "document_start",

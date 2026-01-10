@@ -17,10 +17,9 @@ import { Label } from "@/app/components/ui/label";
 import { cn } from "@/lib/utils";
 import { Textarea } from "@/app/components/ui/textarea";
 import { secondsToTimeHMS, timeToseconds } from "@/utils/format";
-import { TSegment } from "@/types/timecode";
-import { TMovieSearchItem } from "@/types/movie";
-import { TResponse } from "@/types/response";
-import { logOut } from "@/utils/auth";
+import { MovieSearchItem } from "@/interfaces/movie";
+import { ServerResponse } from "@/interfaces/response";
+import { logout } from "@/utils/user";
 import i18n from "@/lib/i18n";
 import {
     Accordion,
@@ -28,6 +27,8 @@ import {
     AccordionItem,
     AccordionTrigger,
 } from "@/app/components/ui/accordion"
+import { ErrorCode } from "@/enums/error-code";
+import { TimecodeEditor } from "@/interfaces/timecode";
 
 /**
  * Form validation scheme
@@ -62,23 +63,14 @@ const formSchema = z.object({
     ),
 })
 
-
-type TEditor = TResponse & {
-    movie_id: number;
-    timecode_id: number;
-    duration: number;
-    segments?: TSegment[] | null;
-};
-
-type RootProps = {
-    movie: TMovieSearchItem;
+interface RootProps {
+    movie: MovieSearchItem;
     onMessage: (b: string) => void;
     onLoading: (b: boolean) => void;
 };
 
-export default function TimecodeEditor({ movie, onMessage, onLoading }: RootProps) {
+export default function TimecodeEditorPage({ movie, onMessage, onLoading }: RootProps) {
     const [noTimecodes, setNoTimecodes] = useState<boolean>(false);
-    const [timecodeId, setTimecodeId] = useState<number | null>(null);
 
     // Default value for the data field
     const segmentValueFields = {
@@ -110,22 +102,22 @@ export default function TimecodeEditor({ movie, onMessage, onLoading }: RootProp
      */
     const handleDelete = async () => {
         let success: boolean = false;
-        if (timecodeId) {
+        if (movie.timecode_id) {
             onLoading(true);
             try {
-                const response: TResponse = await fetchBackground(`${config.baseUrl}/api/v1/timecode/${timecodeId}`, {
+                const response = await fetchBackground<ServerResponse>(`${config.baseUrl}/api/v2/timecodes/${movie.timecode_id}`, {
                     method: "DELETE"
-                }) as TResponse;
+                });
 
                 if (response.success) {
                     success = true;
                 } else switch (response.error?.code) {
-                    case 'ACCESS_TOKEN_INVALID':
-                    case 'USER_NOT_FOUND':
-                        await logOut();
+                    case ErrorCode.ACCESS_TOKEN_INVALID:
+                    case ErrorCode.PERMISSION_DENIED:
+                        await logout();
                         onMessage(i18n.t("accessErrorPleaseTryAgain"));
                         break;
-                    case 'USER_DEACTIVATED':
+                    case ErrorCode.USER_DEACTIVATED:
                         onMessage(i18n.t("userDeactivated"));
                         break;
                 }
@@ -171,10 +163,6 @@ export default function TimecodeEditor({ movie, onMessage, onLoading }: RootProp
 
         const modifiedValues = {
             ...values,
-            ...(timecodeId == null ? {
-                movie_id: movie?.id,
-                tmdb_id: movie?.tmdb_id,
-            } : {}),
             // content_classifications: values.content_classifications.length > 0 ? values.content_classifications : null,
             duration: duration,
             segments: values.segments.length > 0 ? values.segments.map((tc, index) => {
@@ -238,20 +226,22 @@ export default function TimecodeEditor({ movie, onMessage, onLoading }: RootProp
         let success: boolean = false;
 
         try {
-            const response: TResponse = await fetchBackground(`${config.baseUrl}/api/v1/timecode/${timecodeId != null ? `${timecodeId}/edit` : 'new'}`, {
+            const url = movie.timecode_id ? `timecodes/${movie.timecode_id}/editor` : `movies/${movie.tmdb_id}/timecodes/editor/new`;
+
+            const response = await fetchBackground<ServerResponse>(`${config.baseUrl}/api/v2/${url}`, {
                 method: "POST",
                 body: JSON.stringify(modifiedValues)
-            }) as TResponse;
+            });
 
             if (response.success) {
                 success = true;
             } else switch (response.error?.code) {
-                case 'ACCESS_TOKEN_INVALID':
-                case 'USER_NOT_FOUND':
-                    await logOut();
+                case ErrorCode.ACCESS_TOKEN_INVALID:
+                case ErrorCode.PERMISSION_DENIED:
+                    await logout();
                     onMessage(i18n.t("accessErrorPleaseTryAgain"));
                     break;
-                case 'USER_DEACTIVATED':
+                case ErrorCode.USER_DEACTIVATED:
                     onMessage(i18n.t("userDeactivated"));
                     break;
             }
@@ -267,7 +257,7 @@ export default function TimecodeEditor({ movie, onMessage, onLoading }: RootProp
             toast.error(i18n.t("unableAddTimecode"));
             return;
         }
-        onMessage(i18n.t(timecodeId ? "timecodeHasEdited" : "timecodeAdded"));
+        onMessage(i18n.t(movie.timecode_id ? "timecodeHasEdited" : "timecodeAdded"));
     };
 
     /**
@@ -287,15 +277,14 @@ export default function TimecodeEditor({ movie, onMessage, onLoading }: RootProp
     /**
     * Retrieves data about timecodes previously added by the user, if any exist.
     */
-    const initEditor = async (movie: TMovieSearchItem) => {
-        if (movie.id == null) return;
+    const initEditor = async (movie: MovieSearchItem) => {
+        if (!movie.timecode_id) return;
         onLoading(true);
         try {
-            const response: TEditor = await fetchBackground(`${config.baseUrl}/api/v1/timecode/editor/${movie.id}`) as TEditor;
+            const response = await fetchBackground<TimecodeEditor>(`${config.baseUrl}/api/v2/timecodes/${movie.timecode_id}/editor`);
 
             if (response.success) {
-                setTimecodeId(response.timecode_id);
-                setNoTimecodes(response.segments == null || false);
+                setNoTimecodes(response.segments?.length == 0);
 
                 let defaultSegment: {
                     id: number | null;
@@ -319,6 +308,15 @@ export default function TimecodeEditor({ movie, onMessage, onLoading }: RootProp
                     duration: secondsToTimeHMS(response.duration || 0),
                     segments: defaultSegment,
                 });
+            } else switch (response.error?.code) {
+                case ErrorCode.ACCESS_TOKEN_INVALID:
+                case ErrorCode.PERMISSION_DENIED:
+                    await logout();
+                    onMessage(i18n.t("accessErrorPleaseTryAgain"));
+                    break;
+                case ErrorCode.USER_DEACTIVATED:
+                    onMessage(i18n.t("userDeactivated"));
+                    break;
             }
 
         } catch (e) {
@@ -495,12 +493,12 @@ export default function TimecodeEditor({ movie, onMessage, onLoading }: RootProp
 
                     <div className="flex items-center gap-4">
                         <AlertDialog>
-                            <AlertDialogTrigger asChild><Button asChild><span>{i18n.t(timecodeId ? 'save' : 'send')}</span></Button></AlertDialogTrigger>
+                            <AlertDialogTrigger asChild><Button asChild><span>{i18n.t(movie.timecode_id ? 'save' : 'send')}</span></Button></AlertDialogTrigger>
                             <AlertDialogContent>
                                 <AlertDialogHeader>
                                     <AlertDialogTitle>{i18n.t("confirmAction")}</AlertDialogTitle>
                                     <AlertDialogDescription>
-                                        {i18n.t(timecodeId ? 'alertSaveChangeTimecodes' : 'alertSendTimecodes')}
+                                        {i18n.t(movie.timecode_id ? 'alertSaveChangeTimecodes' : 'alertSendTimecodes')}
                                     </AlertDialogDescription>
                                 </AlertDialogHeader>
                                 <AlertDialogFooter>
@@ -514,7 +512,7 @@ export default function TimecodeEditor({ movie, onMessage, onLoading }: RootProp
                             </AlertDialogContent>
                         </AlertDialog>
 
-                        {timecodeId && <AlertDialog>
+                        {movie.timecode_id && <AlertDialog>
                             <AlertDialogTrigger asChild><Button variant='destructive' asChild><span>{i18n.t("delete")}</span></Button></AlertDialogTrigger>
                             <AlertDialogContent>
                                 <AlertDialogHeader>

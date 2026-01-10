@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { TSettings } from '@/types/storage'
+import { Settings } from '@/interfaces/storage'
 import config from "config";
 import i18n from '@/lib/i18n';
 import { Button } from '../components/ui/button';
@@ -7,7 +7,7 @@ import { HardDriveDownload, HardDriveUpload } from 'lucide-react';
 import toast from "react-hot-toast";
 import { SpinnerFullScreen } from '../components/ui/spinner';
 
-export default function Backup() {
+export default function BackupPage() {
     const [isSpinner, setSpinner] = useState<boolean>(false);
 
     /**
@@ -17,7 +17,7 @@ export default function Backup() {
         if (!chrome?.storage?.sync) return;
         setSpinner(true);
         chrome.storage.sync.get('settings', (result) => {
-            const curentSettings: TSettings = result.settings ?? {};
+            const curentSettings: Settings = result.settings ?? {};
             const {
                 obsClient,
                 obsCensorScene,
@@ -63,11 +63,11 @@ export default function Backup() {
                     }
 
                     chrome.storage.sync.get("settings", (result) => {
-                        const current: TSettings = result.settings ?? {};
+                        const current: Settings = result.settings ?? {};
 
-                        const newSettings: Partial<TSettings> = {};
+                        const newSettings: Partial<Settings> = {};
 
-                        for (const key of Object.keys(current) as (keyof TSettings)[]) {
+                        for (const key of Object.keys(current) as (keyof Settings)[]) {
                             if (key === "obsClient") continue; // do not import obsClient
                             if (key === "obsCensorScene") continue; // do not import obsCensorScene
                             if (key in imported) {

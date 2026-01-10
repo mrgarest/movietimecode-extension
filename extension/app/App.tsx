@@ -1,29 +1,29 @@
 import { Routes, Route } from "react-router-dom";
-import Settings from "./pages/settings";
-import OBSControl from "./pages/obs-control";
+import SettingsPage from "./pages/settings";
+import OBSControlPage from "./pages/obs-control";
 import { SideNavLayout } from "@/app/components/layout";
-import NotFound from "./pages/not-found";
+import NotFoundPage from "./pages/not-found";
 import TimecodePage from "./pages/timecode";
-import User from "./pages/user";
-import Hotkeys from "./pages/hotkeys";
-import Chatbot from "./pages/chatbot";
-import Backup from "./pages/backup";
+import UserPage from "./pages/user";
+import HotkeysPage from "./pages/hotkeys";
+import ChatbotPage from "./pages/chatbot";
+import BackupPage from "./pages/backup";
 
 export default function App() {
     return (
         <Routes>
             <Route path="/settings" element={<SideNavLayout />}>
-                <Route index element={<Settings />} />
-                <Route path="obs-control" element={<OBSControl />} />
-                <Route path="chatbot" element={<Chatbot />} />
-                <Route path="hotkeys" element={<Hotkeys />} />
+                <Route index element={<SettingsPage />} />
+                <Route path="obs-control" element={<OBSControlPage />} />
+                <Route path="chatbot" element={<ChatbotPage />} />
+                <Route path="hotkeys" element={<HotkeysPage />} />
             </Route>
             <Route path="/" element={<SideNavLayout />}>
-                <Route path="user" element={<User />} />
-                <Route path="backup" element={<Backup />} />
+                <Route path="user" element={<UserPage />} />
+                <Route path="backup" element={<BackupPage />} />
             </Route>
             <Route path="timecode" element={<TimecodePage />} />
-            <Route path="*" element={<NotFound />} />
+            <Route path="*" element={<NotFoundPage />} />
         </Routes>
     );
 }

@@ -1,5 +1,5 @@
 import { TimecodeAction } from "@/enums/timecode";
-import { TSegment } from "@/types/timecode";
+import { TSegment } from "@/interfaces/timecode";
 import { secondsToTime } from "./format";
 import config from "config";
 

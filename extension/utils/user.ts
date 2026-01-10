@@ -1,23 +1,24 @@
 import config from "config";
 import { goToTab } from "./navigation";
-import { TUser, TUserTwitch } from "@/types/user";
+import { User, UserTwitch } from "@/interfaces/user";
 import { fetchBackground } from "./fetch";
+import { StreamStatusResponse, TwitchTokenResponse } from "@/interfaces/twitch";
 
 /**
  * Opens a new tab for authorization
  */
-export const logIn = () => goToTab({ url: `${config.baseUrl}/auth/twitch` });
+export const login = () => goToTab({ url: `${config.baseUrl}/auth/twitch` });
 
 /**
  * Log out of the system
  */
-export const logOut = async () => await chrome.storage.sync.remove("user");
+export const logout = async () => await chrome.storage.sync.remove("user");
 
 /**
  * Receives user data
- * @returns A user object of type TUser or undefined if the user is not found
+ * @returns A user object of type User or undefined if the user is not found
  */
-export const getUser = async (): Promise<TUser | undefined> => {
+export const getUser = async (): Promise<User | undefined> => {
   const storage = await chrome.storage.sync.get("user");
   return storage?.user;
 };
@@ -28,7 +29,7 @@ export const getUser = async (): Promise<TUser | undefined> => {
  * @param user
  * @returns boolean - True if the token is expired, false otherwise.
  */
-export const isTwitchTokenExpires = (user: TUser): boolean => {
+export const isTwitchTokenExpires = (user: User): boolean => {
   if (!user?.twitch) return true;
 
   const expiresAt = user.twitch.expiresAt;
@@ -43,15 +44,15 @@ export const isTwitchTokenExpires = (user: TUser): boolean => {
  * Refreshes Twitch token and updates chrome.storage.
  *
  * @param user
- * @returns Promise<TUserTwitch | null>
+ * @returns Promise<UserTwitch | null>
  */
 export const refreshTwitchToken = async (
-  user: TUser
-): Promise<TUserTwitch | null> => {
+  user: User
+): Promise<UserTwitch | null> => {
   if (!user?.twitch?.refreshToken) return null;
   try {
-    const data = await fetchBackground(
-      `${config.baseUrl}/api/v1/twitch/token?grant_type=refresh_token&refresh_token=${user.twitch.refreshToken}`,
+    const data = await fetchBackground<TwitchTokenResponse>(
+      `${config.baseUrl}/api/v2/twitch/token?grant_type=refresh_token&refresh_token=${user.twitch.refreshToken}`,
       {
         method: "POST",
       }
@@ -61,7 +62,7 @@ export const refreshTwitchToken = async (
       return null;
     }
 
-    const twitch: TUserTwitch = {
+    const twitch: UserTwitch = {
       accessToken: data.access_token,
       refreshToken: data.refresh_token,
       expiresAt: data.expires_at,
@@ -71,7 +72,7 @@ export const refreshTwitchToken = async (
       user: {
         ...user,
         twitch: twitch,
-      } as TUser,
+      } as User,
     });
 
     return twitch;
@@ -89,11 +90,11 @@ export const refreshTwitchToken = async (
  * @param user
  * @returns Promise<boolean>
  */
-export const isStreamLive = async (user: TUser): Promise<boolean> => {
+export const isStreamLive = async (user: User): Promise<boolean> => {
   if (!user?.twitch?.accessToken) return false;
   try {
-    const data = await fetchBackground(
-      `${config.baseUrl}/api/v1/twitch/stream/status?username=${user.username}&access_token=${user.twitch.accessToken}`
+    const data = await fetchBackground<StreamStatusResponse>(
+      `${config.baseUrl}/api/v2/twitch/stream/status?username=${user.username}&access_token=${user.twitch.accessToken}`
     );
 
     return data.success && data.is_live;

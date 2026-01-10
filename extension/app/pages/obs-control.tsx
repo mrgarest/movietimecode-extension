@@ -1,13 +1,13 @@
 import { useEffect, useState } from 'react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/app/components/ui/select"
 import { StorageDefault } from '@/utils/storage-options'
-import { TSettings } from '@/types/storage'
+import { Settings } from '@/interfaces/storage'
 import { Input } from '@/app/components/ui/input';
 import config from 'config';
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useForm } from "react-hook-form"
 import { z } from "zod"
-import OBSClient, { OBSType, TScene } from "@/lib/obs-client"
+import OBSClient, { OBSType, Scene } from "@/lib/obs-client"
 import { Button } from "@/app/components/ui/button"
 import {
     Form,
@@ -29,14 +29,14 @@ const formSchemaConnection = z.object({
     type: z.string().min(1),
 });
 
-export default function OBSControl() {
-    const [settings, setSettings] = useState<TSettings>({});
+export default function OBSControlPage() {
+    const [settings, setSettings] = useState<Settings>({});
     const [isConnectionEnabled, setConnectionEnabled] = useState<boolean>(true);
     const [isSceneEnabled, setSceneEnabled] = useState<boolean>(false);
     const [isTestEnabled, setTestEnabled] = useState<boolean>(false);
     const [obsCensorSceneName, setObsCensorSceneName] = useState<string | null>(null);
     const [isChangeSceneDialog, setChangeSceneDialog] = useState<boolean>(false);
-    const [obsScene, setObsScene] = useState<TScene[]>([]);
+    const [obsScene, setObsScene] = useState<Scene[]>([]);
     const [getTestLogs, setTestLog] = useState<{
         ok: boolean,
         msg: string
@@ -55,7 +55,7 @@ export default function OBSControl() {
     useEffect(() => {
         if (chrome?.storage?.sync) {
             chrome.storage.sync.get('settings', (result) => {
-                const curentSettings: TSettings = result.settings ?? {};
+                const curentSettings: Settings = result.settings ?? {};
                 curentSettings.obsCensorScene = curentSettings.obsCensorScene as string | null ?? StorageDefault.obsCensorScene;
 
                 if (curentSettings.obsClient) {
@@ -76,7 +76,7 @@ export default function OBSControl() {
         }
     }, []);
 
-    const setStorage = (settings: TSettings, callback: () => void) => {
+    const setStorage = (settings: Settings, callback: () => void) => {
         setSettings(settings);
         chrome.storage.sync.set({ settings: settings }, callback);
     }

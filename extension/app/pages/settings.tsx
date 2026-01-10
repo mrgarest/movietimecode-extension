@@ -4,12 +4,12 @@ import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectVa
 import { BlurPower, TimecodeAction } from '@/enums/timecode';
 import { Input } from '@/app/components/ui/input';
 import { StorageDefault } from '@/utils/storage-options';
-import { TSettings } from '@/types/storage'
+import { Settings } from '@/interfaces/storage'
 import config from "config";
 import i18n from '@/lib/i18n';
 
-export default function Settings() {
-    const [settings, setSettings] = useState<TSettings>({});
+export default function SettingsPage() {
+    const [settings, setSettings] = useState<Settings>({});
     const [timeBuffer, setTimeBuffer] = useState<number>(StorageDefault.timeBuffer);
     const [blurPower, setBlurPower] = useState<BlurPower>(StorageDefault.blurPower);
     const [nudity, setNudity] = useState<TimecodeAction>(StorageDefault.nudity);
@@ -20,7 +20,7 @@ export default function Settings() {
     useEffect(() => {
         if (chrome?.storage?.sync) {
             chrome.storage.sync.get('settings', (result) => {
-                const curentSettings: TSettings = result.settings ?? {};
+                const curentSettings: Settings = result.settings ?? {};
                 curentSettings.timeBuffer = curentSettings.timeBuffer as number ?? StorageDefault.timeBuffer;
                 curentSettings.blurPower = curentSettings.blurPower as BlurPower ?? StorageDefault.blurPower;
                 curentSettings.nudity = curentSettings.nudity as TimecodeAction ?? StorageDefault.nudity;
@@ -41,7 +41,7 @@ export default function Settings() {
         }
     }, []);
 
-    const updateSettings = (updates: Partial<TSettings>) => {
+    const updateSettings = (updates: Partial<Settings>) => {
         setSettings((prev) => {
             const newSettings = { ...prev, ...updates };
             chrome.storage.sync.set({ settings: newSettings }, () => { });
@@ -84,7 +84,7 @@ export default function Settings() {
         updateSettings({ sensitiveExpressions: n as TimecodeAction });
     };
 
-    const getSelectItemBehavior = (settings: TSettings) => [
+    const getSelectItemBehavior = (settings: Settings) => [
         { disabled: false, value: TimecodeAction.noAction, text: i18n.t("inaction") },
         { disabled: false, value: TimecodeAction.blur, text: i18n.t("blur") },
         { disabled: false, value: TimecodeAction.hide, text: i18n.t("hide") },

@@ -1,6 +1,6 @@
 import { ChatbotAccess, ChatbotAction } from "@/enums/chatbot";
 import { BlurPower, TimecodeAction } from "@/enums/timecode";
-import { TChatbotCmmand } from "@/types/chatbot";
+import { ChatbotCmmand } from "@/interfaces/chatbot";
 
 export const StorageDefault = {
   isCensorship: true,
@@ -64,5 +64,5 @@ export const StorageDefault = {
       action: ChatbotAction.currentMovieTime,
       access: ChatbotAccess.users,
     },
-  ] as TChatbotCmmand[],
+  ] as ChatbotCmmand[],
 };

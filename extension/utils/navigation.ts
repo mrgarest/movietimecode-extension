@@ -22,5 +22,5 @@ export const goToTab = ({
 /**
  * Opens a new tab for authorization
  */
-export const logIn = () =>
-  goToTab({ url: `${config.baseUrl}/auth/login/twitch` });
+export const login = () =>
+  goToTab({ url: `${config.baseUrl}/login/extension` });
