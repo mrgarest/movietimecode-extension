@@ -23,6 +23,7 @@ class TimecodeSegmentResource extends JsonResource
             'action_id' => $this->resource->actionId,
             'start_time' => $this->resource->startTime,
             'end_time' => $this->resource->endTime,
+            'description' => $this->resource->description ?? null
         ];;
     }
 }
