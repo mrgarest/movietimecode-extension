@@ -139,7 +139,7 @@ class TimecodeService
      */
     public function edit(TimecodeEditData $data, User $user, int $timecodeId)
     {
-        $timecode = MovieTimecode::with('segments')->find($timecodeId)->first();
+        $timecode = MovieTimecode::with('segments')->find($timecodeId);
 
         if (!$timecode) throw ApiException::notFound();
 
