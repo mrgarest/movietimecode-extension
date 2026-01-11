@@ -18,7 +18,7 @@ Route::prefix('v1')->group(function () {
         });
     });
     Route::prefix('movie')->controller(MovieController::class)->group(function () {
-        Route::get('/search', 'search');
+        Route::get('/search', 'searchOld');
         Route::get('/check', 'checkOld');
     });
     Route::prefix('timecode')->controller(TimecodeController::class)->group(function () {

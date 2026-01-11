@@ -133,4 +133,29 @@ class MovieController extends Controller
             ]
         ]);
     }
+
+    /**
+     * Search for movies by title.
+     * 
+     * @deprecated use search()
+     */
+    public function searchOld(Request $request)
+    {
+        $validated = $request->validate([
+            'q' => 'required|string',
+            'page' => 'nullable|integer',
+            'year' => 'nullable|integer',
+        ]);
+
+        $with = ['movieId'];
+
+        return new SuccessResource([
+            'items' => MovieSearchResource::collection($this->movieService->searchTmdb(
+                title: trim(urldecode($validated['q'])),
+                page: $validated['page'] ?? 1,
+                year: $validated['year'] ?? null,
+                with: $with
+            ))->additional(['with' => $with])
+        ]);
+    }
 }
