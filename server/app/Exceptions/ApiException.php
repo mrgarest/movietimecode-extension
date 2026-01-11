@@ -20,7 +20,7 @@ class ApiException extends Exception
         $this->errorCode = $code;
         $this->details = $details;
     }
-    
+
     /**
      * Automatic response rendering.
      */
@@ -71,6 +71,19 @@ class ApiException extends Exception
             code: 'NOT_FOUND',
             status: Response::HTTP_NOT_FOUND,
             message: 'Not Found',
+            details: $details
+        );
+    }
+
+    /**
+     * Request source is not authorized to access this resource - 401
+     */
+    public static function unauthorizedRequestSource(?array $details = null): self
+    {
+        return new static(
+            code: 'UNAUTHORIZED_REQUEST_SOURCE',
+            status: Response::HTTP_UNAUTHORIZED,
+            message: 'Request source is not authorized to access this resource.',
             details: $details
         );
     }

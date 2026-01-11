@@ -1,8 +1,10 @@
 <?php
 
 use App\Exceptions\ApiException;
+use App\Exceptions\ApiExceptionHandler;
 use App\Http\Middleware\CheckDeactivated;
 use App\Http\Resources\ErrorResource;
+use Illuminate\Http\Request;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
@@ -18,11 +20,12 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware) {
+        $middleware->statefulApi();
         $middleware->trustProxies(at: '*');
         $middleware->alias([
             'not_deactivated' => CheckDeactivated::class,
             'scopes' => CheckScopes::class,
-            'scope' => CheckForAnyScope::class,
+            'scope' => CheckForAnyScope::class
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {
@@ -48,4 +51,23 @@ return Application::configure(basePath: dirname(__DIR__))
         $exceptions->dontReport([
             ApiException::class,
         ]);
+
+        // Instead of a 404 page, a JSON response with a 404 error is returned.
+        $exceptions->render(function (Throwable $e, Request $request) {
+            if ($request->is('api/*') || $request->expectsJson()) {
+                // Get the exception class name
+                $className = get_class($e);
+
+                // Get our custom handlers
+                $handlers = ApiExceptionHandler::$handlers;
+
+                // Check if we have a specific handler for this exception
+                if (array_key_exists($className, $handlers)) {
+                    $method = $handlers[$className];
+                    $apiHandler = new ApiExceptionHandler();
+                    return $apiHandler->$method($e, $request);
+                }
+            }
+            return null;
+        });
     })->create();
