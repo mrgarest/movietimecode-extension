@@ -34,6 +34,7 @@ class MovieController extends Controller
         ]);
 
         $with = $request->filled('with') ? explode(',', $validated['with']) : [];
+        MovieSearchResource::setWith($with);
 
         return new SuccessResource([
             'items' => MovieSearchResource::collection($this->movieService->searchTmdb(
@@ -41,7 +42,7 @@ class MovieController extends Controller
                 page: $validated['page'] ?? 1,
                 year: $validated['year'] ?? null,
                 with: $with
-            ))->additional(['with' => $with])
+            ))
         ]);
     }
 
@@ -148,6 +149,7 @@ class MovieController extends Controller
         ]);
 
         $with = ['movieId'];
+        MovieSearchResource::setWith($with);
 
         return new SuccessResource([
             'items' => MovieSearchResource::collection($this->movieService->searchTmdb(
@@ -155,7 +157,7 @@ class MovieController extends Controller
                 page: $validated['page'] ?? 1,
                 year: $validated['year'] ?? null,
                 with: $with
-            ))->additional(['with' => $with])
+            ))
         ]);
     }
 }

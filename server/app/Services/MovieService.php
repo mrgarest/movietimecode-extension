@@ -79,7 +79,7 @@ class MovieService
         $needsTimecodeId = in_array('timecodeId', $with);
 
         if (($needsMovieId || $needsTimecodeId)) {
-            $user = auth('api')->user();
+            $user = $needsTimecodeId ? auth('api')->user() : null;
             $tmdbIds = $movies->pluck('tmdbId')->toArray();
 
             // Searching for movies via externalIds
@@ -95,14 +95,14 @@ class MovieService
                 ->get()
                 ->keyBy(fn($m) => $m->externalIds->first()?->value);
 
-            $movies->each(function (MovieSearchData $item) use ($dbMovies, $needsMovieId, $needsTimecodeId) {
+            $movies->each(function (MovieSearchData $item) use ($user, $dbMovies, $needsMovieId, $needsTimecodeId) {
                 if ($movie = $dbMovies->get($item->tmdbId)) {
 
                     if ($needsMovieId) {
                         $item->id = $movie->id;
                     }
 
-                    if ($needsTimecodeId && $movie->relationLoaded('movieTimecodes')) {
+                    if ($needsTimecodeId && $user && $movie->relationLoaded('movieTimecodes')) {
                         $item->timecodeId = $movie->movieTimecodes->first()?->id;
                     }
                 }

@@ -10,6 +10,18 @@ class MovieSearchResource extends JsonResource
     // Disable the standard ‘data’ wrapper
     public static $wrap = null;
 
+    private static array $withParams = [];
+
+    /**
+     * Set the 'with' parameters for the resource.
+     *
+     * @param array $with
+     */
+    public static function setWith(array $with): void
+    {
+        self::$withParams = $with;
+    }
+
     /**
      * Transform the resource into an array.
      *
@@ -17,19 +29,12 @@ class MovieSearchResource extends JsonResource
      */
     public function toArray(Request $request): array
     {
-        $with = $this->resource->additional['with'] ?? [];
+        $with = self::$withParams;
 
         return [
-            'id' => $this->when(
-                in_array('movieId', $with),
-                $this->resource->id
-            ),
+            'id' => $this->when(in_array('movieId', $with), $this->resource->id),
             'tmdb_id' => $this->resource->tmdbId,
-            'timecode_id' => $this->when(
-                in_array('timecodeId', $with),
-                $this->resource->timecodeId
-            ),
-            'timecode_id' => $this->resource->timecodeId,
+            'timecode_id' => $this->when(in_array('timecodeId', $with), $this->resource->timecodeId),
             'release_year' => $this->resource->releaseYear,
             'title' => $this->resource->title,
             'original_title' => $this->resource->originalTitle,
