@@ -1,0 +1,63 @@
+<?php
+
+namespace App\Models;
+
+use App\Enums\EventType;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Model;
+
+class Event extends Model
+{
+    protected $fillable = [
+        'device_token',
+        'type',
+        'value',
+        'created_at',
+        'updated_at'
+    ];
+
+    protected $casts = [
+        'device_token' => 'int',
+        'type' => EventType::class,
+        'value' => 'string',
+        'created_at' => 'datetime',
+        'updated_at' => 'datetime',
+    ];
+
+    /**
+     * Universal relationship based on event type.
+     *
+     * @param string $model Model class
+     * @param EventType $type Event type
+     * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
+     */
+    public function relation(string $model, EventType $event)
+    {
+        return $this->belongsTo($model, 'value', 'id')->where('type', $event);
+    }
+
+    public function movie()
+    {
+        return $this->relation(Movie::class, EventType::CHECK_MOVIE);
+    }
+
+    public function timecode()
+    {
+        return $this->relation(MovieTimecode::class, EventType::TIMECODE_USED);
+    }
+
+    public function scopeDeviceToken(Builder $query, string $deviceToken): Builder
+    {
+        return $query->where('device_token', $deviceToken);
+    }
+
+    public function scopeType(Builder $query, EventType $type): Builder
+    {
+        return $query->where('type', $type->value);
+    }
+
+    public function scopeValue(Builder $query, $value): Builder
+    {
+        return $query->where('value', (string) $value);
+    }
+}

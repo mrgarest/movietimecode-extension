@@ -1,6 +1,11 @@
 import config from "config";
 import { User } from "@/interfaces/user";
-import { getUser } from "@/utils/user";
+import { getDeviceToken, getUser } from "@/utils/user";
+
+/**
+ * Ensures a device token is generated when the extension is installed.
+ */
+chrome.runtime.onInstalled.addListener(() => getDeviceToken());
 
 /**
  * Opens the extension page when the browser action icon is clicked.

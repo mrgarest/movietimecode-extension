@@ -1,4 +1,4 @@
-import { ImdbContentRating, MovieCheckResponse , MovieCheckCompany, MovieSearchItem } from "@/interfaces/movie";
+import { ImdbContentRating, MovieCheckResponse, MovieCheckCompany, MovieSearchItem } from "@/interfaces/movie";
 import { useEffect, useState } from "preact/hooks";
 import config from "config";
 import { fetchBackground } from "@/utils/fetch";
@@ -6,6 +6,8 @@ import { format, parseISO } from 'date-fns';
 import { uk } from 'date-fns/locale';
 import { ImdbContentRatingId } from "@/enums/imdb";
 import i18n from "@/lib/i18n";
+import { event } from "@/utils/event";
+import { EventType } from "@/enums/event";
 
 interface RootProps {
     movie: MovieSearchItem;
@@ -27,7 +29,10 @@ export default function Check({ movie, onLoading, onError }: RootProps) {
         setIsLoading(true);
         try {
             const response = await fetchBackground<MovieCheckResponse>(`${config.baseUrl}/api/v2/movies/${movie.tmdb_id}/check`);
-            response.success ? setMovieCheck(response) : onError(i18n.t("checkFailed"));
+            if (response.success) {
+                setMovieCheck(response);
+                event(EventType.CHECK_MOVIE, response.id);
+            } else onError(i18n.t("checkFailed"));
         } catch (e) {
             if (config.debug) {
                 console.error(e);

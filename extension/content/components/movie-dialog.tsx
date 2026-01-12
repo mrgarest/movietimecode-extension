@@ -10,6 +10,8 @@ import { fetchBackground } from "@/utils/fetch";
 import { MovieSearchTimecodesResponse } from "@/interfaces/movie";
 import { LoadingSpinner } from "./ui/loading";
 import { ServerResponse } from "@/interfaces/response";
+import { event } from "@/utils/event";
+import { EventType } from "@/enums/event";
 
 interface RootProps {
     data: MovieSearchTimecodesResponse;
@@ -68,7 +70,7 @@ const MovieDialog = ({ data, onSelected }: RootProps) => {
             return;
         }
         if (author.timecode.segment_count === 0) {
-            handleTimecodeUsedAnalytics(author.timecode.id);
+            event(EventType.TIMECODE_USED, author.timecode.id);
             onSelected([]);
             remove();
             return;
@@ -79,7 +81,7 @@ const MovieDialog = ({ data, onSelected }: RootProps) => {
             const data = await fetchBackground<TimecodeResponse>(
                 `${config.baseUrl}/api/v2/timecodes/${author.timecode.id}`
             );
-            if (data.success) handleTimecodeUsedAnalytics(author.timecode.id);
+            if (data.success) event(EventType.TIMECODE_USED, author.timecode.id);
             onSelected(data.success ? (data.segments ?? []) : undefined);
         } catch (e) {
             if (config.debug) {
@@ -90,24 +92,6 @@ const MovieDialog = ({ data, onSelected }: RootProps) => {
         setLoading(false);
         remove();
     };
-
-    /**
-     * Sends a request to increase the timecode usage counter.
-     * @param id Timecode id.
-     * 
-     * @deprecated 
-     */
-    async function handleTimecodeUsedAnalytics(
-        id: number
-    ) {
-        try {
-            await fetchBackground<ServerResponse>(`${config.baseUrl}/api/v1/timecode/${id}/analytics/used`, { method: "POST" });
-        } catch (e) {
-            if (config.debug) {
-                console.error(e);
-            }
-        }
-    }
 
     return (
         <div className="mt-dialog-container mt-dialog-movie">

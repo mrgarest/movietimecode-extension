@@ -1,0 +1,29 @@
+import config from "config";
+import { ServerResponse } from "@/interfaces/response";
+import { fetchBackground } from "./fetch";
+import { getDeviceToken } from "./user";
+import { EventType } from "@/enums/event";
+
+/**
+ * Sends an event to the server.
+ *
+ * @param type The type of event.
+ * @param value The value associated with the event.
+ */
+export const event = async (type: EventType, value: number | string) => {
+  try {
+    const deviceToken = await getDeviceToken();
+    await fetchBackground<ServerResponse>(`${config.baseUrl}/api/v2/events`, {
+      method: "POST",
+      body: JSON.stringify({
+        device_token: deviceToken,
+        type,
+        value: value.toString(),
+      }),
+    });
+  } catch (err) {
+    if (config.debug) {
+      console.error(err);
+    }
+  }
+};

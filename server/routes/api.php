@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Api\AuthController;
+use App\Http\Controllers\Api\EventController;
 use App\Http\Controllers\Api\MovieController;
 use App\Http\Controllers\Api\TimecodeController;
 use App\Http\Controllers\Api\TwitchController;
@@ -78,4 +79,6 @@ Route::prefix('v2')->group(function () {
             Route::delete('/', 'delete');
         });
     });
+
+    Route::post('/events', [EventController::class, 'store']);
 });

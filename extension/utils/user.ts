@@ -3,24 +3,40 @@ import { goToTab } from "./navigation";
 import { User, UserTwitch } from "@/interfaces/user";
 import { fetchBackground } from "./fetch";
 import { StreamStatusResponse, TwitchTokenResponse } from "@/interfaces/twitch";
+import CryptoJS from "crypto-js";
 
 /**
- * Opens a new tab for authorization
+ * Opens a new tab for authorization.
  */
 export const login = () => goToTab({ url: `${config.baseUrl}/auth/twitch` });
 
 /**
- * Log out of the system
+ * Log out of the system.
  */
 export const logout = async () => await chrome.storage.sync.remove("user");
 
 /**
- * Receives user data
- * @returns A user object of type User or undefined if the user is not found
+ * Receives user data.
+ * @returns A user object of type User or undefined if the user is not found.
  */
 export const getUser = async (): Promise<User | undefined> => {
   const storage = await chrome.storage.sync.get("user");
   return storage?.user;
+};
+
+/** 
+ * Generates and stores a unique device token if it doesn't already exist.
+ *
+ * @returns Promise<string> - The device token.
+ */
+export const getDeviceToken = async (): Promise<string> => {
+  const device = await chrome.storage.sync.get("device");
+  if (device?.token) return device.token;
+  const deviceToken = CryptoJS.lib.WordArray.random(18).toString();
+
+  chrome.storage.sync.set({ device: { token: deviceToken } });
+
+  return deviceToken;
 };
 
 /**
