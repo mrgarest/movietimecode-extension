@@ -18,7 +18,7 @@ class EventController extends Controller
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'device_token' => 'required|in:refresh_token',
+            'device_token' => 'required|string',
             'type' => ['required', new Enum(EventType::class)],
             'value' => 'required|string|numeric',
         ]);
