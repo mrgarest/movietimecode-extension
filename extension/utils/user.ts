@@ -24,18 +24,18 @@ export const getUser = async (): Promise<User | undefined> => {
   return storage?.user;
 };
 
-/** 
+/**
  * Generates and stores a unique device token if it doesn't already exist.
  *
  * @returns Promise<string> - The device token.
  */
 export const getDeviceToken = async (): Promise<string> => {
-  const device = await chrome.storage.sync.get("device");
+  const { device } = await chrome.storage.sync.get("device");
   if (device?.token) return device.token;
+
   const deviceToken = CryptoJS.lib.WordArray.random(18).toString();
-
-  chrome.storage.sync.set({ device: { token: deviceToken } });
-
+  await chrome.storage.sync.set({ device: { token: deviceToken } });
+  
   return deviceToken;
 };
 
