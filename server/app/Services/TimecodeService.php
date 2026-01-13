@@ -320,6 +320,6 @@ class TimecodeService
                     default => $query->orderByDesc('created_at'),
                 };
             })
-            ->paginate(20);
+            ->paginate(20, ['*'], 'page', $page);
     }
 }

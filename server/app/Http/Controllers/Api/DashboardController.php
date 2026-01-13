@@ -25,6 +25,7 @@ class DashboardController extends Controller
     public function timecodes(Request $request, TimecodeService $service)
     {
         $validated = $request->validate([
+            'page' => 'nullable|numeric',
             'sort' => 'nullable|string',
         ]);
 
