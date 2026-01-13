@@ -1,10 +1,13 @@
 <?php
 
+use App\Enums\RoleId;
 use App\Http\Controllers\Api\AuthController;
+use App\Http\Controllers\Api\DashboardController;
 use App\Http\Controllers\Api\EventController;
 use App\Http\Controllers\Api\MovieController;
 use App\Http\Controllers\Api\TimecodeController;
 use App\Http\Controllers\Api\TwitchController;
+use App\Http\Controllers\Api\UserController;
 use App\Http\Middleware\AuthApiMiddleware;
 use Illuminate\Support\Facades\Route;
 
@@ -38,8 +41,24 @@ Route::prefix('v1')->group(function () {
     });
 });
 
+
+Route::prefix('dashboard')
+    ->middleware(['auth:api', 'not_deactivated', 'scopes:server', 'check_role:' . RoleId::ADMIN->value])
+    ->controller(DashboardController::class)
+    ->group(function () {
+        Route::get('/statistics', 'statistics');
+        Route::get('/timecodes', 'timecodes');
+    });
+
 Route::prefix('v2')->group(function () {
     Route::post('/auth/extension', [AuthController::class, 'extension']);
+
+    Route::prefix('user')
+        ->middleware(['auth:api', 'not_deactivated', 'scopes:server'])
+        ->controller(UserController::class)
+        ->group(function () {
+            Route::get('/', 'me');
+        });
 
     Route::prefix('twitch')
         ->middleware(['auth:api', 'not_deactivated', 'scopes:extension'])

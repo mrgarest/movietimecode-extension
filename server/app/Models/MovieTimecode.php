@@ -2,13 +2,16 @@
 
 namespace App\Models;
 
+use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Prunable;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class MovieTimecode extends Model
 {
-    use HasFactory;
+    use HasFactory, SoftDeletes, Prunable;
     protected $table = 'movie_tcs';
 
     protected $fillable = [
@@ -32,10 +35,23 @@ class MovieTimecode extends Model
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
     ];
-    
+
+    /**
+     * Automatic deletion of deleted timecodes.
+     */
+    public function prunable(): Builder
+    {
+        return static::where('deleted_at', '<=', Carbon::now()->subMonth());
+    }
+
     public function user()
     {
         return $this->belongsTo(User::class);
+    }
+
+    public function movie()
+    {
+        return $this->belongsTo(Movie::class, 'movie_id');
     }
 
     public function segments()

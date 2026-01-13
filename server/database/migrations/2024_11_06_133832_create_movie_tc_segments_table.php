@@ -14,7 +14,7 @@ return new class extends Migration
      */
     public function up(): void
     {
-         Schema::create('movie_tcs', function (Blueprint $table) {
+        Schema::create('movie_tcs', function (Blueprint $table) {
             $table->id()->from(1000);
             $table->foreignIdFor(User::class)->nullable()->constrained()->nullOnDelete();
             $table->foreignIdFor(Movie::class)->constrained()->cascadeOnDelete();
@@ -24,7 +24,7 @@ return new class extends Migration
             $table->unsignedBigInteger('used_count')->default(0);
             $table->timestamps();
         });
-        
+
         Schema::create('movie_tc_segments', function (Blueprint $table) {
             $table->id()->from(1000);
             $table->foreignIdFor(User::class)->nullable()->constrained()->nullOnDelete();

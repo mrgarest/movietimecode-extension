@@ -1,6 +1,6 @@
 import { CalendarDays } from "lucide-react";
 
-export default function Privacy() {
+export default function PrivacyPage() {
     return (<>
         <title>Політика конфіденційності</title>
         <div className="legal">

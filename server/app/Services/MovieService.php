@@ -10,6 +10,7 @@ use App\Enums\MovieCompanyRole;
 use App\Enums\MovieExternalId as EnumsMovieExternalId;
 use App\Enums\StorageId;
 use App\Helpers\MovieHelper;
+use App\Jobs\AddImagesToMovie;
 use App\Models\Movie;
 use App\Models\MovieCompany;
 use App\Models\MovieExternalId;
@@ -197,7 +198,8 @@ class MovieService
             $insertData = collect($movieTranslations['translations'])
                 ->map(fn($t) => [
                     'lang_code' => strtolower($t['iso_639_1']),
-                    'title' => $t['data']['title'] ?? null
+                    'title' => $t['data']['title'] ?? null,
+                    'poster_path' => $t['poster_path'] != null ? str_replace('/', '', $t['poster_path']) : null,
                 ])
                 ->filter(fn($t) => !$this->isBlacklistLanguage($t['lang_code']) && !empty($t['title']))
                 ->unique('lang_code')
@@ -239,6 +241,9 @@ class MovieService
             movie: $movie,
             imdbId: $movieDetails['imdb_id']
         );
+
+        // Asynchronous addition of localized images to a movie
+        AddImagesToMovie::dispatch($movie->id, $movieDetails['imdb_id'])->delay(Carbon::now()->addSeconds(mt_rand(2, 120)));
 
         return $movie;
     }
@@ -300,7 +305,7 @@ class MovieService
             releaseYear: $movie->release_date?->year,
             title: $translation->title,
             originalTitle: $movie->title,
-            posterPath: $movie->poster_path,
+            posterPath: $translation->poster_path ?? $movie->poster_path,
         );
     }
 }

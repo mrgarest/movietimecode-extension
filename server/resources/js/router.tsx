@@ -1,17 +1,36 @@
 import { createBrowserRouter } from "react-router-dom";
 import MainLayout from "./layouts/MainLayout";
-import Privacy from "./pages/privacy";
-import Home from "./pages/home";
-import NotFound from "./pages/not-found";
+import PrivacyPage from "./pages/privacy";
+import HomePage from "./pages/home";
+import NotFoundPage from "./pages/not-found";
+import DashboardLayout from "./layouts/DashboardLayout";
+import ProtectedRoute from "./components/ProtectedRoute";
+import DashboardPage from "./pages/dashboard";
+import LogoutPage from "./pages/logout";
+import TimecodePage from "./pages/dashboard/timecode";
 
 const router = createBrowserRouter([
     {
         path: "/",
         element: <MainLayout />,
         children: [
-            { index: true, element: <Home /> },
-            { path: "/privacy", element: <Privacy /> },
-            { path: "*", element: <NotFound /> }
+            { index: true, element: <HomePage /> },
+            { path: "/privacy", element: <PrivacyPage /> },
+            { path: "/logout", element: <LogoutPage /> },
+            { path: "*", element: <NotFoundPage /> }
+        ],
+    },
+    {
+        element: <ProtectedRoute />,
+        children: [
+            {
+                path: "/dashboard",
+                element: <DashboardLayout />,
+                children: [
+                    { index: true, element: <DashboardPage /> },
+                    { path: 'timecodes', element: <TimecodePage /> },
+                ],
+            },
         ],
     },
 ]);

@@ -3,12 +3,10 @@ import { useEffect, useState } from 'react';
 import { createRoot } from "react-dom/client";
 import { getPageData } from './utils/json-page-data';
 import { useTranslation } from 'react-i18next';
-import { Spinner } from './components/ui/spinner';
 import BackgroundGradient from './components/BackgroundGradient';
 import { isValidValue } from './utils/helpers';
-
-// Source identifier for authentication messages
-const SOURCE_BASE = 'movietimecode:';
+import { Spinner } from './components/ui/spinner';
+import { PostMessageSource } from './enums/post-command';
 
 const App = () => {
     const { t } = useTranslation();
@@ -37,7 +35,7 @@ const App = () => {
          * @param {MessageEvent} event - The message event object.
          */
         const onMessage = (event: MessageEvent) => {
-            if (event.data?.source !== SOURCE_BASE + pageData.target) return;
+            if (event.data?.source !== `movietimecode:${pageData.target}`) return;
             switch (event.data?.type) {
                 case "success":
                     setText(t('auth.completedSuccessfully'));
@@ -54,7 +52,7 @@ const App = () => {
 
         // Post the authentication data to the window after a short delay
         setTimeout(() => window.postMessage({
-            source: SOURCE_BASE + "server",
+            source: PostMessageSource.SERVER,
             auth: {
                 id: pageData.id,
                 token: pageData.token

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Services\AuthService;
+use Redirect;
 
 class AuthController extends Controller
 {
@@ -15,8 +16,18 @@ class AuthController extends Controller
         return $this->authService->login(AuthService::TARGET_EXTENSION);
     }
 
+    public function server()
+    {
+        return $this->authService->login(AuthService::TARGET_SERVER);
+    }
+
     public function callback()
     {
-        return view('auth', ['jsonPageData' => $this->authService->callback()->toArray()]);
+        $data = $this->authService->callback();
+
+        if($data->target === AuthService::TARGET_SERVER) {
+            return Redirect::to('/dashboard');
+        }
+        return view('auth', ['jsonPageData' => $data->toArray()]);
     }
 }

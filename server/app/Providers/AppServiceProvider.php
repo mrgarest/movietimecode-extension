@@ -22,7 +22,8 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         Passport::tokensCan([
-            AuthService::TARGET_EXTENSION => 'Permission to use extension API'
+            AuthService::TARGET_EXTENSION => 'Permission to use extension API',
+            AuthService::TARGET_SERVER => 'Permission to use server API',
         ]);
     }
 }

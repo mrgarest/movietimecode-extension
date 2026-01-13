@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Cache\TimecodeCacheKey;
+use App\Clients\TmdbClient;
 use App\DTO\Timecode\Editor\TimecodeEditData;
 use App\DTO\Timecode\Editor\TimecodeSegmentEditData;
 use App\DTO\Timecode\TimecodeAuthorData;
@@ -14,6 +15,7 @@ use App\Models\MovieTimecode;
 use App\Models\MovieTimecodeSegment;
 use App\Models\User;
 use Carbon\Carbon;
+use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
@@ -58,7 +60,7 @@ class TimecodeService
             if (!$timecode) {
                 return null;
             }
-            
+
             return [
                 'id' => $timecode->id,
                 'movie_id' => $timecode->movie_id,
@@ -91,10 +93,15 @@ class TimecodeService
         if (!$movie) throw ApiException::notFound();
 
         // If timecodes have already been added earlier by this user, we return an error. 
-        $hasTimecode = MovieTimecode::userId($user->id)
+        $existingTimecode = MovieTimecode::withTrashed()
+            ->userId($user->id)
             ->movieId($movie->id)
-            ->exists();
-        if ($hasTimecode) throw ApiException::timecodesAlreadyExist();
+            ->first();
+
+        if ($existingTimecode) {
+            if (!$existingTimecode->trashed()) throw ApiException::timecodesAlreadyExist();
+            $existingTimecode->forceDelete();
+        }
 
         DB::transaction(function () use ($data, $user, $movie) {
             $timecode = MovieTimecode::create([
@@ -209,21 +216,40 @@ class TimecodeService
      *
      * @param User $user
      * @param int $timecodeId
+     * @param string $langCode
      * @return TimecodeEditorData|null
      */
-    public function editor(User $user, int $timecodeId): ?TimecodeEditorData
+    public function editor(User $user, int $timecodeId, string $langCode = 'uk'): ?TimecodeEditorData
     {
+        $timecode = MovieTimecode::with([
+            'segments' => fn($q) => $q->orderBy('start_time'),
+            'movie.translations' => function ($q) use ($langCode) {
+                $q->whereIn('lang_code', [$langCode, 'en']);
+            }
+        ])->find($timecodeId);
+
         $timecode = MovieTimecode::with(['segments' => fn($q) => $q->orderBy('start_time')])->find($timecodeId);
 
         if (!$timecode) return null;
 
         if ($user->id !== $timecode->user_id && !$user->isAdmin()) throw ApiException::permissionDenied();
 
+        $movie = $timecode->movie;
+
+        // Determine translation (Current language -> English)
+        $translation = $movie->translations->firstWhere('lang_code', $langCode) ?? $movie->translations->firstWhere('lang_code', 'en');
+
+        $posterPath = $translation?->poster_path ?? $movie->poster_path;
+
         return new TimecodeEditorData(
             id: $timecode->id,
             movieId: $timecode->movie_id,
             duration: $timecode->duration,
-            segments: $timecode->segments->map(fn($s) => TimecodeSegmentData::fromModel($s)),
+            releaseYear: $movie->release_date?->year,
+            title: $translation?->title ?? $movie->title,
+            originalTitle: $movie->title,
+            posterUrl: $posterPath ? TmdbClient::getImageUrl('w200', str_replace('/', '', $posterPath)) : null,
+            segments: $timecode->segments->map(fn($s) => TimecodeSegmentData::fromModel($s))
         );
     }
 
@@ -232,22 +258,68 @@ class TimecodeService
      *
      * @param User $user
      * @param int $timecodeId
+     * @param bool $force
      * @return bool
      */
-    public function delete(User $user, int $timecodeId): bool
+    public function delete(User $user, int $timecodeId, bool $force = false): bool
     {
-        $timecode = MovieTimecode::find($timecodeId);
+        $timecode = MovieTimecode::withTrashed()->find($timecodeId);
         if (!$timecode) return true;
 
         if ($user->id !== $timecode->user_id && !$user->isAdmin()) throw ApiException::permissionDenied();
 
         $movieId = $timecode->movie_id;
-        $result = $timecode->delete();
+
+        if ($force && $user->isAdmin()) {
+            $result = $timecode->forceDelete();
+        } else {
+            $result = $timecode->delete();
+        }
 
         // Clearing the timecode cache
         Cache::forget(TimecodeCacheKey::authors($movieId));
         Cache::forget(TimecodeCacheKey::timecodes($timecode->id));
 
         return $result;
+    }
+
+    /**
+     * Get the latest timecodes with movie information.
+     *
+     * @param int $page
+     * @param string $langCode
+     * @param User|null $user
+     * @param string|null $sortBy
+     * @param bool $canSeeTrashed
+     * @return LengthAwarePaginator
+     */
+    public function getLatestPaginated(int $page = 1, string $langCode = 'uk',  ?User $user = null, string $sortBy = 'latest', bool $canSeeTrashed = false): LengthAwarePaginator
+    {
+        return MovieTimecode::query()
+            ->withCount('segments')
+            ->when($canSeeTrashed, function ($query) {
+                return $query->withTrashed();
+            })
+            ->with([
+                'user' => function ($query) {
+                    $query->select('id', 'username');
+                },
+                'movie' => function ($query) use ($langCode) {
+                    $query->with(['translations' => function ($q) use ($langCode) {
+                        $q->where('lang_code', $langCode);
+                    }]);
+                },
+            ])
+            ->when($user, function ($query, $user) {
+                return $query->userId($user->id);
+            })
+            ->when($sortBy, function ($query) use ($sortBy) {
+                return match ($sortBy) {
+                    'segments' => $query->orderByDesc('segments_count'),
+                    'usage'    => $query->orderByDesc('used_count'),
+                    default    => $query->orderByDesc('created_at'),
+                };
+            })
+            ->paginate(20, ['*'], 'page', $page);
     }
 }

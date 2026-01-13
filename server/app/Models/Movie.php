@@ -83,14 +83,6 @@ class Movie extends Model
         return self::where('title', 'ILIKE', "%$title%");
     }
 
-    public static function findWithTranslation($id, $langCode, array $select = [['*'], ['*']])
-    {
-        return self::with([
-            'translation' => function ($query) use ($select, $langCode) {
-                $query->select(array_merge(['id', 'movie_id', 'lang_code'], $select[1]))->where('lang_code', $langCode);
-            }
-        ])->select(array_merge(['id'], $select[0]))->where('id', $id);
-    }
 
     /**
      * Scope for searching for a movie by titles list and release year.

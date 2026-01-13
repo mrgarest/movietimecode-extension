@@ -18,7 +18,11 @@ class TimecodeEditorResource extends SuccessResource
             'id' => $this->resource->id,
             'movie_id' => $this->resource->movieId,
             'duration' => $this->resource->duration,
-            'segments' => TimecodeSegmentResource::collection($this->resource->segments),
+            'release_year' => $this->resource->releaseYear,
+            'title' => $this->resource->title,
+            'original_title' => $this->resource->originalTitle,
+            'poster_url' => $this->resource->posterUrl, 
+            'segments' => TimecodeSegmentResource::collection($this->resource->segments)
         ];
     }
 }

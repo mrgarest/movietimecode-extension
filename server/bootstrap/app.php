@@ -3,6 +3,7 @@
 use App\Exceptions\ApiException;
 use App\Exceptions\ApiExceptionHandler;
 use App\Http\Middleware\CheckDeactivated;
+use App\Http\Middleware\CheckRole;
 use App\Http\Resources\ErrorResource;
 use Illuminate\Http\Request;
 use Illuminate\Foundation\Application;
@@ -22,10 +23,12 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withMiddleware(function (Middleware $middleware) {
         $middleware->statefulApi();
         $middleware->trustProxies(at: '*');
+        $middleware->encryptCookies(except: ['uat']);
         $middleware->alias([
             'not_deactivated' => CheckDeactivated::class,
             'scopes' => CheckScopes::class,
-            'scope' => CheckForAnyScope::class
+            'scope' => CheckForAnyScope::class,
+            'check_role' => CheckRole::class
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {
@@ -43,7 +46,11 @@ return Application::configure(basePath: dirname(__DIR__))
 
         $exceptions->render(function (AuthenticationException $e, Request $request) {
             if ($request->is('api/*')) {
-                return ApiException::accessTokenInvalid();
+                return ErrorResource::make(
+                    code: 'ACCESS_TOKEN_INVALID',
+                    status: 401,
+                    message: 'Access token invalid',
+                )->toResponse($request);
             }
         });
 

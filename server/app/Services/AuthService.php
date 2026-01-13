@@ -13,6 +13,7 @@ use App\Models\User;
 use App\Models\UserProvider;
 use Carbon\Carbon;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Support\Facades\Cookie;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
@@ -23,6 +24,7 @@ class AuthService
 {
     public const SESSION_TARGET_KEY = 'login_target';
     public const TARGET_EXTENSION = 'extension';
+    public const TARGET_SERVER = 'server';
 
     /**
      * Redirect the user of the application to the provider's authentication screen.
@@ -37,7 +39,10 @@ class AuthService
         /** @var TwitchProvider $driver */
         $driver = Socialite::driver(AuthProvider::TWITCH->value);
 
-        return $driver->scopes(['user:read:email', 'chat:edit', 'chat:read'])->redirect();
+        $scopes = ['user:read:email'];
+        if ($target === self::TARGET_EXTENSION) $scopes = array_merge($scopes, ['chat:edit', 'chat:read']);
+
+        return $driver->scopes($scopes)->redirect();
     }
 
     /**
@@ -111,17 +116,30 @@ class AuthService
                     ]);
                 }
 
-                // Creating a temporary token for extension
-                $token = Str::random(64);
-
-                ExpansionAuth::create([
-                    'user_id' => $user->id,
-                    'token' => $token,
-                    'payload' => [
-                        'twitch' => TwitchAuthData::fromSocialite($socialite)->toArray()
-                    ],
-                    'expires_at' => Carbon::now()->addMinutes(5),
-                ]);
+                switch ($target) {
+                    case self::TARGET_EXTENSION:
+                        // Extension login uses temporary tokens
+                        $token = Str::random(64);
+                        ExpansionAuth::create([
+                            'user_id' => $user->id,
+                            'token' => $token,
+                            'payload' => [
+                                'twitch' => TwitchAuthData::fromSocialite($socialite)->toArray()
+                            ],
+                            'expires_at' => Carbon::now()->addMinutes(5),
+                        ]);
+                    case self::TARGET_SERVER:
+                        // Server login uses long-lived Access Tokens
+                        $token = $user->createToken('Server', [self::TARGET_SERVER])->accessToken;
+                        Cookie::queue('uat', $token, 43200, '/', null, false, false);
+                        break;
+                    default:
+                        return new CallbackAuthData(
+                            success: false,
+                            target: $target,
+                            langKey: 'auth.failed'
+                        );
+                }
 
                 return new CallbackAuthData(
                     success: true,

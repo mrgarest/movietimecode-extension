@@ -1,15 +1,15 @@
 import { cn } from "@/lib/utils";
 import { useLocation } from "react-router-dom";
 import { useTranslation } from 'react-i18next';
-import { HTMLAttributeAnchorTarget, useState } from "react";
+import { HTMLAttributeAnchorTarget } from "react";
 import Linker from "./Linker";
-import { Cross as Hamburger } from "hamburger-react";
+import FloatingHamburger from "./FloatingHamburger";
+import { useMobileMenu } from "@/hooks/useMobileMenu";
 
 export default function HeaderNavbar() {
     const { pathname } = useLocation();
     const { t } = useTranslation();
-    const [isOpenHamburger, setOpenHamburger] = useState<boolean>(false);
-    const [isMenuVisible, setMenuVisible] = useState<boolean>(false);
+    const { isOpen, isVisible, toggleMenu } = useMobileMenu();
 
     const navItems: {
         name: string;
@@ -29,20 +29,6 @@ export default function HeaderNavbar() {
             },
         ];
 
-    // Handle hamburger menu open/close
-    const handleHamburger = () => {
-        document.body.style.overflow = !isOpenHamburger ? "hidden" : "";
-
-        if (!isOpenHamburger) {
-            setOpenHamburger(true);
-
-            setTimeout(() => setMenuVisible(true), 10);
-        } else {
-            setMenuVisible(false);
-            setTimeout(() => setOpenHamburger(false), 300);
-        }
-    };
-
     return (
         <>
             <header className="sm:my-6 flex items-center fixed sm:sticky top-4 left-0 right-0 z-20 px-4">
@@ -61,30 +47,18 @@ export default function HeaderNavbar() {
                     </div>
                 </nav>
             </header>
-            <div className={cn("bg-secondary rounded-full size-12 flex items-center justify-center border-border border gap-2 shadow-md shadow-black/30 overflow-hidden fixed right-6 bottom-6 z-40",
-                !isOpenHamburger && "sm:hidden")}>
-                <div className="absolute">
-                    <Hamburger
-                        rounded
-                        hideOutline
-                        size={20}
-                        duration={0.6}
-                        label="Show menu"
-                        toggled={isOpenHamburger}
-                        toggle={handleHamburger} />
-                </div>
-            </div>
-            {isOpenHamburger && <>
+            <FloatingHamburger hidden="sm" isOpen={isOpen} onToggle={() => toggleMenu()} />
+            {isOpen && <>
                 <div className={cn("fixed top-0 left-0 right-0 -bottom-20 bg-background/50 backdrop-blur-md z-20 pointer-events-none duration-300",
-                    isMenuVisible ? "opacity-100" : "opacity-0"
+                    isVisible ? "opacity-100" : "opacity-0"
                 )} />
                 <div className={cn("fixed top-0 left-0 right-0 bottom-0 z-30 overflow-hidden duration-300",
-                    isMenuVisible ? "opacity-100" : "opacity-0"
+                    isVisible ? "opacity-100" : "opacity-0"
                 )}>
                     <div className="relative z-10 flex flex-col p-4 gap-1 overflow-auto max-h-screen">{navItems.map((item, index) => <Linker
                         key={index}
                         target={item.target}
-                        onClick={handleHamburger}
+                        onClick={() => toggleMenu()}
                         className={cn(
                             "px-4 py-2 text-base rounded-lg font-medium cursor-pointer select-none",
                             pathname === item.href ? "bg-secondary/40 text-foreground" : "hover:bg-secondary/40 text-foreground/70 hover:text-foreground duration-300"

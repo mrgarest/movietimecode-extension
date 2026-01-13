@@ -1,9 +1,9 @@
 import { useTranslation } from "react-i18next";
 
-export default function Home() {
+export default function HomePage() {
     const { t } = useTranslation();
     return (<>
-        <title>Movie Timecode</title>
+        <title>{t('homePage.title')}</title>
         <meta name="description" content={t('homePage.description')} />
         <div className="flex items-center justify-center px-4">
             <div className="pb-20">

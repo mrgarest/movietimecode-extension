@@ -108,9 +108,14 @@ class TimecodeController extends Controller
      */
     public function delete(Request $request, int $timecodeId)
     {
+        $validated = $request->validate([
+            'force' => 'nullable|boolean'
+        ]);
+
         $this->timecodeService->delete(
             user: $request->user(),
-            timecodeId: $timecodeId
+            timecodeId: $timecodeId,
+            force: $validated['force'] ?? false
         );
 
         return new SuccessResource(null);
