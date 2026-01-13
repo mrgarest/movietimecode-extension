@@ -38,5 +38,9 @@ export interface TimecodeEditor extends ServerResponse {
   id: number;
   movie_id: number;
   duration: number;
+  release_year: number | null;
+  title: string | null;
+  original_title: string;
+  poster_url: string | null;
   segments: TimecodeSegment[] | null;
 }

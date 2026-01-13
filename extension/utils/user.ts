@@ -8,7 +8,7 @@ import CryptoJS from "crypto-js";
 /**
  * Opens a new tab for authorization.
  */
-export const login = () => goToTab({ url: `${config.baseUrl}/auth/twitch` });
+export const login = () => goToTab({ url: `${config.baseUrl}/login/extension` });
 
 /**
  * Log out of the system.

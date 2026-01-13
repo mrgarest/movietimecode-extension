@@ -5,7 +5,7 @@ const CONTENT_SCRIPTS = "/content";
 export default defineConfig(
   buildDefineConfig({
     input: {
-      "sa": CONTENT_SCRIPTS + "/server/auth.ts"
+      "post-command": CONTENT_SCRIPTS + "/server/post-command.ts"
     },
   })
 );

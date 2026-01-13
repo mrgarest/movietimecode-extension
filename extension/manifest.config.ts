@@ -48,7 +48,15 @@ export default function getManifest() {
           `${baseUrl}/auth/callback*`,
           ...(config.debug === true ? ["*://localhost/auth/callback*"] : []),
         ],
-        js: ["assets/wa.js"],
+        js: ["assets/sa.js"],
+        run_at: "document_start",
+      },
+      {
+        matches: [
+          `${baseUrl}/dashboard*`,
+          ...(config.debug === true ? ["*://localhost/dashboard*"] : []),
+        ],
+        js: ["assets/post-command.js"],
         run_at: "document_start",
       },
     ],

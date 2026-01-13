@@ -23,9 +23,10 @@ export default function TimecodePage() {
     // Extracts parameters from URL
     const location = useLocation();
     const searchParams = new URLSearchParams(location.search);
+    const timecodeId = searchParams.get("id");
     const query = searchParams.get("q");
     const year = searchParams.get("y");
-    if (!query) {
+    if (!query && !timecodeId) {
         return <NotFound />
     }
 
@@ -45,7 +46,7 @@ export default function TimecodePage() {
                     setLoading(false);
                     return;
                 }
-                setStep(1);
+                setStep(timecodeId ? 2 : 1);
             } catch (e) {
                 if (config.debug) {
                     console.error(e);
@@ -82,7 +83,7 @@ export default function TimecodePage() {
                     <Button onClick={() => login()}>{i18n.t("login")}</Button>
                 </div>
                 }
-                {step == 1 && <SearchMoviePage
+                {step == 1 && query && <SearchMoviePage
                     query={query}
                     year={Number(year) || null}
                     onSelected={handleSelectedMovie}
@@ -90,8 +91,9 @@ export default function TimecodePage() {
                     onHideContent={setHideContent}
                     onLoading={setLoading} />
                 }
-                {step == 2 && movie && <TimecodeEditorPage
-                    movie={movie}
+                {step == 2 && <TimecodeEditorPage
+                    id={Number(timecodeId) || null}
+                    movieSearch={movie}
                     onMessage={setFinalMessage}
                     onLoading={setLoading} />
                 }

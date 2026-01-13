@@ -64,13 +64,22 @@ const formSchema = z.object({
 })
 
 interface RootProps {
-    movie: MovieSearchItem;
+    id: number | null;
+    movieSearch: MovieSearchItem | null;
     onMessage: (b: string) => void;
     onLoading: (b: boolean) => void;
 };
 
-export default function TimecodeEditorPage({ movie, onMessage, onLoading }: RootProps) {
+export default function TimecodeEditorPage({ id = null, movieSearch = null, onMessage, onLoading }: RootProps) {
     const [noTimecodes, setNoTimecodes] = useState<boolean>(false);
+    const [timecodeId, setTimecodeId] = useState<number|null>(null);
+    const [tmdbId, setTmdbId] = useState<number|null>(null);
+    const [movie, setMovie] = useState<{
+        releaseYear: number | null;
+        title: string | null;
+        originalTitle: string;
+        posterUrl: string | null;
+    } | null>(null);
 
     // Default value for the data field
     const segmentValueFields = {
@@ -102,10 +111,10 @@ export default function TimecodeEditorPage({ movie, onMessage, onLoading }: Root
      */
     const handleDelete = async () => {
         let success: boolean = false;
-        if (movie.timecode_id) {
+        if (timecodeId) {
             onLoading(true);
             try {
-                const response = await fetchBackground<ServerResponse>(`${config.baseUrl}/api/v2/timecodes/${movie.timecode_id}`, {
+                const response = await fetchBackground<ServerResponse>(`${config.baseUrl}/api/v2/timecodes/${timecodeId}`, {
                     method: "DELETE"
                 });
 
@@ -226,7 +235,7 @@ export default function TimecodeEditorPage({ movie, onMessage, onLoading }: Root
         let success: boolean = false;
 
         try {
-            const url = movie.timecode_id ? `timecodes/${movie.timecode_id}/editor` : `movies/${movie.tmdb_id}/timecodes/editor/new`;
+            const url = timecodeId ? `timecodes/${timecodeId}/editor` : `movies/${tmdbId}/timecodes/editor/new`;
 
             const response = await fetchBackground<ServerResponse>(`${config.baseUrl}/api/v2/${url}`, {
                 method: "POST",
@@ -257,7 +266,7 @@ export default function TimecodeEditorPage({ movie, onMessage, onLoading }: Root
             toast.error(i18n.t("unableAddTimecode"));
             return;
         }
-        onMessage(i18n.t(movie.timecode_id ? "timecodeHasEdited" : "timecodeAdded"));
+        onMessage(i18n.t(timecodeId ? "timecodeHasEdited" : "timecodeAdded"));
     };
 
     /**
@@ -277,13 +286,28 @@ export default function TimecodeEditorPage({ movie, onMessage, onLoading }: Root
     /**
     * Retrieves data about timecodes previously added by the user, if any exist.
     */
-    const initEditor = async (movie: MovieSearchItem) => {
-        if (!movie.timecode_id) return;
+    const initEditor = async (id: number | null, movie: MovieSearchItem | null) => {
+        let timecodeId = undefined;
+        if (movie?.timecode_id) {
+            timecodeId = movie?.timecode_id;
+        } else if (id) {
+            timecodeId = id;
+        }
+
+        if (!timecodeId) return;
         onLoading(true);
         try {
-            const response = await fetchBackground<TimecodeEditor>(`${config.baseUrl}/api/v2/timecodes/${movie.timecode_id}/editor`);
+            const response = await fetchBackground<TimecodeEditor>(`${config.baseUrl}/api/v2/timecodes/${timecodeId}/editor`);
 
             if (response.success) {
+                setTimecodeId(response.id);
+                setTmdbId(movie?.tmdb_id ?? null);
+                setMovie({
+                    releaseYear: response.release_year,
+                    title: response.title,
+                    originalTitle: response.original_title,
+                    posterUrl: response.poster_url,
+                })
                 setNoTimecodes(response.segments?.length == 0);
 
                 let defaultSegment: {
@@ -328,23 +352,23 @@ export default function TimecodeEditorPage({ movie, onMessage, onLoading }: Root
     };
 
     useEffect(() => {
-        initEditor(movie);
-    }, [movie]);
+        initEditor(id, movieSearch);
+    }, [movieSearch, id]);
 
     return (
         <>
             <Form {...form}>
-                {movie !== null && <>
+                {movie && <>
                     <div
                         className="flex items-center gap-4">
-                        {movie.poster_url != null && <img
+                        {movie.posterUrl != null && <img
                             className="w-16 rounded-md select-none pointer-events-none border border-input"
-                            src={movie.poster_url} />}
+                            src={movie.posterUrl} />}
                         <div className="space-y-1">
                             <div>
-                                <span className="text-2xl font-bold">{movie.title || movie.original_title}</span><span className="text-xs text-muted pt-1.5 pl-2">({movie.release_year})</span>
+                                <span className="text-2xl font-bold">{movie.title || movie.originalTitle}</span><span className="text-xs text-muted pt-1.5 pl-2">({movie.releaseYear})</span>
                             </div>
-                            {movie.title != null && <div className="text-xs text-muted font-medium">{movie.original_title}</div>}
+                            {movie.title != null && <div className="text-xs text-muted font-medium">{movie.originalTitle}</div>}
                         </div>
                     </div>
                     <hr />
@@ -493,12 +517,12 @@ export default function TimecodeEditorPage({ movie, onMessage, onLoading }: Root
 
                     <div className="flex items-center gap-4">
                         <AlertDialog>
-                            <AlertDialogTrigger asChild><Button asChild><span>{i18n.t(movie.timecode_id ? 'save' : 'send')}</span></Button></AlertDialogTrigger>
+                            <AlertDialogTrigger asChild><Button asChild><span>{i18n.t(timecodeId ? 'save' : 'send')}</span></Button></AlertDialogTrigger>
                             <AlertDialogContent>
                                 <AlertDialogHeader>
                                     <AlertDialogTitle>{i18n.t("confirmAction")}</AlertDialogTitle>
                                     <AlertDialogDescription>
-                                        {i18n.t(movie.timecode_id ? 'alertSaveChangeTimecodes' : 'alertSendTimecodes')}
+                                        {i18n.t(timecodeId ? 'alertSaveChangeTimecodes' : 'alertSendTimecodes')}
                                     </AlertDialogDescription>
                                 </AlertDialogHeader>
                                 <AlertDialogFooter>
@@ -512,7 +536,7 @@ export default function TimecodeEditorPage({ movie, onMessage, onLoading }: Root
                             </AlertDialogContent>
                         </AlertDialog>
 
-                        {movie.timecode_id && <AlertDialog>
+                        {timecodeId && <AlertDialog>
                             <AlertDialogTrigger asChild><Button variant='destructive' asChild><span>{i18n.t("delete")}</span></Button></AlertDialogTrigger>
                             <AlertDialogContent>
                                 <AlertDialogHeader>

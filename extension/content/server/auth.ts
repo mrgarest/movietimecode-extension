@@ -2,9 +2,7 @@ import { fetchBackground } from "@/utils/fetch";
 import config from "config";
 import { User } from "@/interfaces/user";
 import { ServerResponse } from "@/interfaces/response";
-
-// Source identifier for authentication messages
-const SOURCE = "movietimecode:extension";
+import { PostMessageSource } from "@/enums/post-command";
 
 /**
  * Sends an error message and clears user from storage.
@@ -13,7 +11,7 @@ const postError = () => {
   chrome.storage.sync.set({ user: undefined });
   window.postMessage(
     {
-      source: SOURCE,
+      source: PostMessageSource.EXTENSION,
       type: "error",
     },
     "*"
@@ -41,7 +39,7 @@ interface AuthExtension extends ServerResponse {
  */
 const onMessage = async (event: any) => {
   if (event.source !== window) return;
-  if (event.data?.source !== "movietimecode:server") return;
+  if (event.data?.source !== PostMessageSource.SERVER) return;
   const auth = event.data?.auth;
   if (!auth?.id || !auth?.token) {
     return;
@@ -80,7 +78,7 @@ const onMessage = async (event: any) => {
         () => {
           window.postMessage(
             {
-              source: SOURCE,
+              source: PostMessageSource.EXTENSION,
               type: "success",
             },
             "*"
