@@ -293,7 +293,7 @@ class TimecodeService
      * @param bool $canSeeTrashed
      * @return LengthAwarePaginator
      */
-    public function getLatestPaginated(int $page = 1, string $langCode = 'uk',  ?User $user = null, string $sortBy = 'latest', bool $canSeeTrashed = false): LengthAwarePaginator
+    public function getLatestPaginated(int $page = 1, string $langCode = 'uk', ?User $user = null, string $sortBy = 'latest', bool $canSeeTrashed = false): LengthAwarePaginator
     {
         return MovieTimecode::query()
             ->withCount('segments')
@@ -316,10 +316,10 @@ class TimecodeService
             ->when($sortBy, function ($query) use ($sortBy) {
                 return match ($sortBy) {
                     'segments' => $query->orderByDesc('segments_count'),
-                    'usage'    => $query->orderByDesc('used_count'),
-                    default    => $query->orderByDesc('created_at'),
+                    'usage' => $query->orderByDesc('used_count'),
+                    default => $query->orderByDesc('created_at'),
                 };
             })
-            ->paginate(20, ['*'], 'page', $page);
+            ->paginate(20);
     }
 }
