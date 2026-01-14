@@ -171,7 +171,12 @@ class TimecodeService
 
         if ($user->id !== $timecode->user_id && !$user->isAdmin()) throw ApiException::permissionDenied();
 
-        DB::transaction(function () use ($timecode, $data) {
+        DB::transaction(function () use ($user, $timecode, $data) {
+            // Recovery if timecodes have been deleted
+            if ($timecode->trashed() && $user->isAdmin()) {
+                $timecode->restore();
+            }
+
             // Update the duration if it has changed
             if ($timecode->duration !== $data->duration) {
                 $timecode->update(['duration' => $data->duration]);
@@ -284,8 +289,6 @@ class TimecodeService
                 $q->whereIn('lang_code', [$langCode, 'en']);
             }
         ])->find($timecodeId);
-
-        $timecode = MovieTimecode::with(['segments' => fn($q) => $q->orderBy('start_time')])->find($timecodeId);
 
         if (!$timecode) return null;
 
