@@ -11,6 +11,8 @@ export const StorageDefault = {
   violence: TimecodeAction.blur,
   sensitiveExpressions: TimecodeAction.mute,
   playerContentCensorshipCommand: TimecodeAction.blur,
+  useDrugsAlcoholTobacco: TimecodeAction.blur,
+  prohibitedSymbols: TimecodeAction.blur,
   obsClient: null,
   obsCensorScene: null,
   chatbotEnabled: false,

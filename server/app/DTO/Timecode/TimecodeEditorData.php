@@ -14,8 +14,12 @@ readonly class TimecodeEditorData
         public string $title,
         public string $originalTitle,
         public ?string $posterUrl = null,
+
         /** @var Collection<int, TimecodeSegmentData> */
         public Collection $segments,
+
+        /** @var array<int>|null */
+        public ?array $contentClassifications = null
     ) {}
 
     public static function fromArray(array $data): self
@@ -27,6 +31,7 @@ readonly class TimecodeEditorData
             releaseYear: $data['release_year'],
             title: $data['title'],
             originalTitle: $data['original_title'],
+            contentClassifications: $data['content_classifications'] ?? null,
             segments: collect($data['segments'])->map(fn($s) => TimecodeSegmentData::fromArray($s))
         );
     }

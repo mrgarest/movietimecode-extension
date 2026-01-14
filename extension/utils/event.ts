@@ -11,6 +11,7 @@ import { EventType } from "@/enums/event";
  * @param value The value associated with the event.
  */
 export const event = async (type: EventType, value: number | string) => {
+  if (config.debug) return;
   try {
     const deviceToken = await getDeviceToken();
     await fetchBackground<ServerResponse>(`${config.baseUrl}/api/v2/events`, {

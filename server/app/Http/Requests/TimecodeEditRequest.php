@@ -24,6 +24,9 @@ class TimecodeEditRequest extends FormRequest
         return [
             'duration' => 'required|integer|min:1',
 
+            'content_classifications' => 'nullable|array',
+            'content_classifications.*' => 'integer',
+            
             'segments' => 'nullable|array',
             'segments.*.id' => 'nullable|integer',
             'segments.*.tag_id' => 'required|integer',

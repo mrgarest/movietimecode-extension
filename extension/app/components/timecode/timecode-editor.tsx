@@ -1,6 +1,6 @@
 import { fetchBackground } from "@/utils/fetch";
 import config from "config";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Button } from "@/app/components/ui/button";
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/app/components/ui/form";
 import { Checkbox } from "@/app/components/ui/checkbox";
@@ -29,12 +29,13 @@ import {
 } from "@/app/components/ui/accordion"
 import { ErrorCode } from "@/enums/error-code";
 import { TimecodeEditor } from "@/interfaces/timecode";
+import { TwitchContentClassification } from "@/enums/twitch";
 
 /**
  * Form validation scheme
  */
 const formSchema = z.object({
-    // content_classifications: z.array(z.number()),
+    content_classifications: z.array(z.number()),
     duration: z.object({
         hours: z.string().min(1).max(2),
         minutes: z.string().min(1).max(2),
@@ -72,14 +73,15 @@ interface RootProps {
 
 export default function TimecodeEditorPage({ id = null, movieSearch = null, onMessage, onLoading }: RootProps) {
     const [noTimecodes, setNoTimecodes] = useState<boolean>(false);
-    const [timecodeId, setTimecodeId] = useState<number|null>(null);
-    const [tmdbId, setTmdbId] = useState<number|null>(null);
+    const [timecodeId, setTimecodeId] = useState<number | null>(null);
+    const [tmdbId, setTmdbId] = useState<number | null>(null);
     const [movie, setMovie] = useState<{
         releaseYear: number | null;
         title: string | null;
         originalTitle: string;
         posterUrl: string | null;
     } | null>(null);
+    const [disabledCctIds, setDisabledCctIds] = useState<number[]>([]);
 
     // Default value for the data field
     const segmentValueFields = {
@@ -94,7 +96,7 @@ export default function TimecodeEditorPage({ id = null, movieSearch = null, onMe
     const form = useForm<z.infer<typeof formSchema>>({
         resolver: zodResolver(formSchema),
         defaultValues: {
-            // content_classifications: [],
+            content_classifications: [],
             duration: secondsToTimeHMS(0),
             segments: [segmentValueFields]
         },
@@ -105,6 +107,61 @@ export default function TimecodeEditorPage({ id = null, movieSearch = null, onMe
         control: form.control,
         name: "segments",
     });
+
+    // Content classification for Twitch
+    const contentClassification: { id: number, label: string, disabled?: boolean }[] = [
+        {
+            id: TwitchContentClassification.POLITICS_AND_SENSITIVE_SOCIAL_ISSUES,
+            label: "politicsAndSensitiveSocialIssues"
+        },
+        {
+            id: TwitchContentClassification.DRUGS_INTOXICATION_TOBACCO,
+            label: "drugsIntoxicationTobacco"
+        },
+        {
+            id: TwitchContentClassification.GAMBLING,
+            label: "gambling"
+        },
+        {
+            id: TwitchContentClassification.PROFANITY_VULGARITY,
+            label: "profanityVulgarity"
+        },
+        {
+            id: TwitchContentClassification.SEXUAL_THEMES,
+            label: "sexualThemes"
+        },
+        {
+            id: TwitchContentClassification.VIOLENT_GRAPHIC,
+            label: "violentGraphic"
+        }
+    ];
+
+    /**
+     * Get content classification for Twitch based on timecode tags.
+     * @param tagId 
+     */
+    const getCctBasedOnTimecodeTags = (tagId: TimecodeTag): TwitchContentClassification | null => {
+        switch (tagId) {
+            case TimecodeTag.NUDITY:
+            case TimecodeTag.SEXUAL_CONTENT_WITHOUT_NUDITY:
+                return TwitchContentClassification.SEXUAL_THEMES;
+            case TimecodeTag.VIOLENCE:
+                return TwitchContentClassification.VIOLENT_GRAPHIC;
+            case TimecodeTag.SENSITIVE_EXPRESSIONS:
+                return TwitchContentClassification.PROFANITY_VULGARITY;
+            case TimecodeTag.USE_DRUGS_ALCOHOL_TOBACCO:
+                return TwitchContentClassification.DRUGS_INTOXICATION_TOBACCO;
+            default:
+                return null;
+        }
+    };
+
+    const visualClassification = useMemo(() => {
+        return contentClassification.map(item => ({
+            ...item,
+            disabled: disabledCctIds.includes(item.id)
+        }));
+    }, [disabledCctIds]);
 
     /**
      * Deletes timecodes from the database
@@ -172,7 +229,7 @@ export default function TimecodeEditorPage({ id = null, movieSearch = null, onMe
 
         const modifiedValues = {
             ...values,
-            // content_classifications: values.content_classifications.length > 0 ? values.content_classifications : null,
+            content_classifications: values.content_classifications.length > 0 ? values.content_classifications : null,
             duration: duration,
             segments: values.segments.length > 0 ? values.segments.map((tc, index) => {
                 const startsecondss = timeToseconds(tc.start_time.hours, tc.start_time.minutes, tc.start_time.seconds);
@@ -275,7 +332,11 @@ export default function TimecodeEditorPage({ id = null, movieSearch = null, onMe
     const handleNoTimecodes = (checked: CheckedState) => {
         const b: boolean = checked === true;
         setNoTimecodes(b);
-        b ? removeSegment() : handleAppendFields();
+        if (b) {
+            removeSegment()
+            setDisabledCctIds([]);
+            form.setValue("content_classifications", []);
+        } else handleAppendFields();
     };
 
     /**
@@ -294,20 +355,28 @@ export default function TimecodeEditorPage({ id = null, movieSearch = null, onMe
             timecodeId = id;
         }
 
-        if (!timecodeId) return;
+        if (!timecodeId) {
+            setTmdbId(movie?.tmdb_id ?? null);
+            setMovie(movie ? {
+                releaseYear: movie.release_year,
+                title: movie.title,
+                originalTitle: movie.original_title,
+                posterUrl: movie.poster_url,
+            } : null);
+            return;
+        }
         onLoading(true);
         try {
             const response = await fetchBackground<TimecodeEditor>(`${config.baseUrl}/api/v2/timecodes/${timecodeId}/editor`);
 
             if (response.success) {
                 setTimecodeId(response.id);
-                setTmdbId(movie?.tmdb_id ?? null);
                 setMovie({
                     releaseYear: response.release_year,
                     title: response.title,
                     originalTitle: response.original_title,
                     posterUrl: response.poster_url,
-                })
+                });
                 setNoTimecodes(response.segments?.length == 0);
 
                 let defaultSegment: {
@@ -318,17 +387,38 @@ export default function TimecodeEditorPage({ id = null, movieSearch = null, onMe
                     tag_id: string,
                 }[] = [];
 
+                const detectedCctIds: TwitchContentClassification[] = [];
                 if (response?.segments) {
-                    response.segments.forEach(segment => defaultSegment.push({
-                        id: segment.id,
-                        start_time: secondsToTimeHMS(segment.start_time || 0),
-                        end_time: secondsToTimeHMS(segment.end_time || 0),
-                        tag_id: segment.tag_id != null ? segment.tag_id + "" : '',
-                        description: segment.description != null ? segment.description : ''
-                    }));
+
+                    const collectId = (tagId: TimecodeTag) => {
+                        const idToAdd: TwitchContentClassification | null = getCctBasedOnTimecodeTags(tagId);
+
+                        if (idToAdd && !detectedCctIds.includes(idToAdd)) {
+                            detectedCctIds.push(idToAdd);
+                        }
+                    };
+
+                    response.segments.forEach(segment => {
+                        collectId(segment.tag_id);
+
+                        defaultSegment.push({
+                            id: segment.id,
+                            start_time: secondsToTimeHMS(segment.start_time || 0),
+                            end_time: secondsToTimeHMS(segment.end_time || 0),
+                            tag_id: segment.tag_id != null ? segment.tag_id + "" : '',
+                            description: segment.description != null ? segment.description : ''
+                        })
+                    });
                 }
+                setDisabledCctIds(detectedCctIds);
 
                 form.reset({
+                    content_classifications: [
+                        ...new Set([
+                            ...(detectedCctIds || []),
+                            ...(response.content_classifications || [])
+                        ])
+                    ],
                     duration: secondsToTimeHMS(response.duration || 0),
                     segments: defaultSegment,
                 });
@@ -340,6 +430,9 @@ export default function TimecodeEditorPage({ id = null, movieSearch = null, onMe
                     break;
                 case ErrorCode.USER_DEACTIVATED:
                     onMessage(i18n.t("userDeactivated"));
+                    break;
+                default:
+                    onMessage(i18n.t("unknownError"));
                     break;
             }
 
@@ -354,6 +447,45 @@ export default function TimecodeEditorPage({ id = null, movieSearch = null, onMe
     useEffect(() => {
         initEditor(id, movieSearch);
     }, [movieSearch, id]);
+
+    /**
+     * Synchronization of content classification.
+     * @param segments 
+     */
+    const syncClassifications = (segments: any[]) => {
+        // 1. Gather all categories that MUST be blocked (based on tags)
+        const requiredIds = new Set<number>();
+        segments.forEach(s => {
+            const twitchId = getCctBasedOnTimecodeTags(Number(s.tag_id));
+            if (twitchId !== null) {
+                requiredIds.add(twitchId);
+            }
+        });
+
+        const newDisabledArray = Array.from(requiredIds);
+
+        // Update the disabled status for the UI (to lock/unlock checkboxes)
+        setDisabledCctIds(newDisabledArray);
+
+        // 3. Updating values in the form
+        const currentValues = form.getValues("content_classifications") || [];
+
+        const updatedValues = currentValues.filter(id => {
+            // If this ID is still on the list of required items, leave it.
+            if (newDisabledArray.includes(id)) return true;
+
+            // If this ID was in the disabledCctIds list and is no longer there, we REMOVE it (uncheck it).
+            if (disabledCctIds.includes(id)) return false;
+
+            // Leave all others (manual user selection)
+            return true;
+        });
+
+        // Combine with new mandatory items and remove duplicates
+        const finalValues = Array.from(new Set([...updatedValues, ...newDisabledArray]));
+
+        form.setValue("content_classifications", finalValues);
+    };
 
     return (
         <>
@@ -374,43 +506,7 @@ export default function TimecodeEditorPage({ id = null, movieSearch = null, onMe
                     <hr />
                 </>}
                 <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-                    {/* <div className="space-y-5">
-                    <div className="space-y-1">
-                        <FormLabel htmlFor="content_classifications">Класифікація контенту для Twitch</FormLabel>
-                        <FormDescription>Виберіть класифікації контенту, яку стрімер повинен увімкнути під час перегляду фільмів на Twitch.</FormDescription>
-                    </div>
-                    <div className="space-y-3">
-                        {contentClassification.map((item) => (
-                            <FormField
-                                key={item.id}
-                                control={form.control}
-                                name="content_classifications"
-                                render={({ field }) => (
-                                    <FormItem
-                                        key={item.id}
-                                        className="flex flex-row items-start gap-3 space-y-0" >
-                                        <FormControl>
-                                            <Checkbox
-                                                checked={field.value?.includes(item.id)}
-                                                onCheckedChange={(checked) => {
-                                                    return checked
-                                                        ? field.onChange([...field.value, item.id])
-                                                        : field.onChange(
-                                                            field.value?.filter(
-                                                                (value) => value !== item.id
-                                                            )
-                                                        )
-                                                }}
-                                            />
-                                        </FormControl>
-                                        <FormLabel className="font-normal cursor-pointer">{item.label}</FormLabel>
-                                    </FormItem>
-                                )}
-                            />
-                        ))}
-                    </div>
-                </div>
-                <hr /> */}
+
                     <div className="space-y-2">
                         <div className="flex items-start gap-4 rounded-md">
                             {timeField(`duration`, form.control)}
@@ -452,7 +548,19 @@ export default function TimecodeEditorPage({ id = null, movieSearch = null, onMe
                                                 name={`segments.${index}.tag_id`}
                                                 render={({ field }) => (
                                                     <Select
-                                                        onValueChange={field.onChange}
+                                                        onValueChange={(val) => {
+                                                            // Updating a specific field
+                                                            field.onChange(val);
+
+                                                            // Get the current status of all segments
+                                                            const allSegments = form.getValues("segments");
+
+                                                            // Since only one segment has been changed, let's replace it in the array for instant recalculation.
+                                                            const updatedSegments = [...allSegments];
+                                                            updatedSegments[index] = { ...updatedSegments[index], tag_id: val };
+
+                                                            syncClassifications(updatedSegments);
+                                                        }}
                                                         defaultValue={field.value}>
                                                         <FormControl>
                                                             <SelectTrigger className="w-full order-3 sm:order-2 max-sm:col-span-2">
@@ -464,6 +572,8 @@ export default function TimecodeEditorPage({ id = null, movieSearch = null, onMe
                                                             <SelectItem value={String(TimecodeTag.SEXUAL_CONTENT_WITHOUT_NUDITY)}>{i18n.t("sexualContentWithoutNudity")}</SelectItem>
                                                             <SelectItem value={String(TimecodeTag.VIOLENCE)}>{i18n.t("violence")}</SelectItem>
                                                             <SelectItem value={String(TimecodeTag.SENSITIVE_EXPRESSIONS)}>{i18n.t("sensitiveExpressions")}</SelectItem>
+                                                            <SelectItem value={String(TimecodeTag.USE_DRUGS_ALCOHOL_TOBACCO)}>{i18n.t("useDrugsAlcoholTobacco")}</SelectItem>
+                                                            <SelectItem value={String(TimecodeTag.PROHIBITED_SYMBOLS)}>{i18n.t("prohibitedSymbols")}</SelectItem>
                                                         </SelectContent>
                                                     </Select>
                                                 )}
@@ -514,6 +624,45 @@ export default function TimecodeEditorPage({ id = null, movieSearch = null, onMe
                                 <CirclePlus strokeWidth={2} />{i18n.t("addTimecode")}</Button>
                         </div>
                     </>)}
+
+                    <hr />
+                    <div className="space-y-5">
+                        <div className="space-y-1">
+                            <FormLabel htmlFor="content_classifications">{i18n.t('twitchContentClassification')}</FormLabel>
+                            <FormDescription>{i18n.t('twitchContentClassificationDescription')}</FormDescription>
+                        </div>
+                        <div className="space-y-3">
+                            {visualClassification.map((item) => (
+                                <FormField
+                                    key={item.id}
+                                    control={form.control}
+                                    name="content_classifications"
+                                    render={({ field }) => (
+                                        <FormItem
+                                            key={item.id}
+                                            className="flex flex-row items-start gap-3 space-y-0" >
+                                            <FormControl>
+                                                <Checkbox
+                                                    disabled={item.disabled}
+                                                    checked={field.value?.includes(item.id)}
+                                                    onCheckedChange={(checked) => {
+                                                        return checked
+                                                            ? field.onChange([...field.value, item.id])
+                                                            : field.onChange(
+                                                                field.value?.filter(
+                                                                    (value) => value !== item.id
+                                                                )
+                                                            )
+                                                    }}
+                                                />
+                                            </FormControl>
+                                            <FormLabel className="font-normal cursor-pointer">{i18n.t('twitchContentClassificationOptions.' + item.label)}</FormLabel>
+                                        </FormItem>
+                                    )}
+                                />
+                            ))}
+                        </div>
+                    </div>
 
                     <div className="flex items-center gap-4">
                         <AlertDialog>
@@ -576,6 +725,14 @@ export default function TimecodeEditorPage({ id = null, movieSearch = null, onMe
                             <div>
                                 <p><b>{i18n.t("sensitiveExpressions")}</b></p>
                                 <p className="text-muted font-medium">{i18n.t("sensitiveExpressionsDescription")}</p>
+                            </div>
+                            <div>
+                                <p><b>{i18n.t("useDrugsAlcoholTobacco")}</b></p>
+                                <p className="text-muted font-medium">{i18n.t("useDrugsAlcoholTobaccoDescription")}</p>
+                            </div>
+                            <div>
+                                <p><b>{i18n.t("prohibitedSymbols")}</b></p>
+                                <p className="text-muted font-medium">{i18n.t("prohibitedSymbolsDescription")}</p>
                             </div>
                         </AccordionContent>
                     </AccordionItem>

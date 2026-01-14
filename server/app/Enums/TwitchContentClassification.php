@@ -2,7 +2,7 @@
 
 namespace App\Enums;
 
-enum ContentClassificationTwitch: int
+enum TwitchContentClassification: int
 {
     case DRUGS_INTOXICATION_TOBACCO = 100;
     case GAMBLING = 101;

@@ -22,6 +22,7 @@ class TimecodeEditorResource extends SuccessResource
             'title' => $this->resource->title,
             'original_title' => $this->resource->originalTitle,
             'poster_url' => $this->resource->posterUrl, 
+            'content_classifications' => $this->resource->contentClassifications, 
             'segments' => TimecodeSegmentResource::collection($this->resource->segments)
         ];
     }

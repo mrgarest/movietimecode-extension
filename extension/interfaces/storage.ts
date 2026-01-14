@@ -11,6 +11,8 @@ export interface Settings {
   sexualContentWithoutNudity?: TimecodeAction;
   violence?: TimecodeAction;
   sensitiveExpressions?: TimecodeAction;
+  useDrugsAlcoholTobacco?: TimecodeAction;
+  prohibitedSymbols?: TimecodeAction;
   obsClient?: SettingsOBSClientNull;
   obsCensorScene?: string | null;
   playerContentCensorshipCommand?: TimecodeAction;

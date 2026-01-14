@@ -16,6 +16,8 @@ export default function SettingsPage() {
     const [sexualContentWithoutNudity, setSexualContentWithoutNudity] = useState<TimecodeAction>(StorageDefault.sexualContentWithoutNudity);
     const [violence, setViolence] = useState<TimecodeAction>(StorageDefault.violence);
     const [sensitiveExpressions, setSensitiveExpressions] = useState<TimecodeAction>(StorageDefault.sensitiveExpressions);
+    const [useDrugsAlcoholTobacco, setUseDrugsAlcoholTobacco] = useState<TimecodeAction>(StorageDefault.useDrugsAlcoholTobacco);
+    const [prohibitedSymbols, setProhibitedSymbols] = useState<TimecodeAction>(StorageDefault.prohibitedSymbols);
 
     useEffect(() => {
         if (chrome?.storage?.sync) {
@@ -27,6 +29,8 @@ export default function SettingsPage() {
                 curentSettings.sexualContentWithoutNudity = curentSettings.sexualContentWithoutNudity as TimecodeAction ?? StorageDefault.sexualContentWithoutNudity;
                 curentSettings.violence = curentSettings.violence as TimecodeAction ?? StorageDefault.violence;
                 curentSettings.sensitiveExpressions = curentSettings.sensitiveExpressions as TimecodeAction ?? StorageDefault.sensitiveExpressions;
+                curentSettings.useDrugsAlcoholTobacco = curentSettings.useDrugsAlcoholTobacco as TimecodeAction ?? StorageDefault.useDrugsAlcoholTobacco;
+                curentSettings.prohibitedSymbols = curentSettings.prohibitedSymbols as TimecodeAction ?? StorageDefault.prohibitedSymbols;
 
                 setSettings(curentSettings);
 
@@ -35,6 +39,8 @@ export default function SettingsPage() {
                 setNudity(curentSettings.nudity);
                 setViolence(curentSettings.violence);
                 setSensitiveExpressions(curentSettings.sensitiveExpressions);
+                setUseDrugsAlcoholTobacco(curentSettings.useDrugsAlcoholTobacco);
+                setProhibitedSymbols(curentSettings.prohibitedSymbols);
             });
         } else if (config.debug) {
             console.warn("chrome.storage is not available.");
@@ -82,6 +88,17 @@ export default function SettingsPage() {
         const n = Number(value);
         setSensitiveExpressions(n);
         updateSettings({ sensitiveExpressions: n as TimecodeAction });
+    };
+
+    const handleUseDrugsAlcoholTobacco = (value: string) => {
+        const n = Number(value);
+        setUseDrugsAlcoholTobacco(n);
+        updateSettings({ useDrugsAlcoholTobacco: n as TimecodeAction });
+    };
+    const handleProhibitedSymbols = (value: string) => {
+        const n = Number(value);
+        setProhibitedSymbols(n);
+        updateSettings({ prohibitedSymbols: n as TimecodeAction });
     };
 
     const getSelectItemBehavior = (settings: Settings) => [
@@ -194,6 +211,42 @@ export default function SettingsPage() {
                         onValueChange={handleSensitiveExpressions}
                         defaultValue={sensitiveExpressions.toString()}
                         value={sensitiveExpressions.toString()}>
+                        <SelectTrigger className="w-44">
+                            <SelectValue placeholder={i18n.t("selectBehavior")} />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectGroup>
+                                {selectItemBehavior.map((item, index) => <SelectItem key={index} disabled={item.disabled} value={item.value.toString()}>{item.text}</SelectItem>)}
+                            </SelectGroup>
+                        </SelectContent>
+                    </Select>
+                </SettingsCard>
+                <hr />
+                <SettingsCard
+                    title={i18n.t("useDrugsAlcoholTobacco")}
+                    description={i18n.t("useDrugsAlcoholTobaccoDescription")}>
+                    <Select
+                        onValueChange={handleUseDrugsAlcoholTobacco}
+                        defaultValue={useDrugsAlcoholTobacco.toString()}
+                        value={useDrugsAlcoholTobacco.toString()}>
+                        <SelectTrigger className="w-44">
+                            <SelectValue placeholder={i18n.t("selectBehavior")} />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectGroup>
+                                {selectItemBehavior.map((item, index) => <SelectItem key={index} disabled={item.disabled} value={item.value.toString()}>{item.text}</SelectItem>)}
+                            </SelectGroup>
+                        </SelectContent>
+                    </Select>
+                </SettingsCard>
+                <hr />
+                <SettingsCard
+                    title={i18n.t("prohibitedSymbols")}
+                    description={i18n.t("prohibitedSymbolsDescription")}>
+                    <Select
+                        onValueChange={handleProhibitedSymbols}
+                        defaultValue={prohibitedSymbols.toString()}
+                        value={prohibitedSymbols.toString()}>
                         <SelectTrigger className="w-44">
                             <SelectValue placeholder={i18n.t("selectBehavior")} />
                         </SelectTrigger>

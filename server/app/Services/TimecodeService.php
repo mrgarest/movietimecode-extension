@@ -13,6 +13,7 @@ use App\DTO\Timecode\TimecodeSegmentData;
 use App\Exceptions\ApiException;
 use App\Models\MovieTimecode;
 use App\Models\MovieTimecodeSegment;
+use App\Models\MovieTimecodeTwitchContentClassification;
 use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Pagination\LengthAwarePaginator;
@@ -53,7 +54,7 @@ class TimecodeService
     public function getTimecodes(int $timecodeId): ?TimecodeData
     {
         $data = Cache::remember(TimecodeCacheKey::timecodes($timecodeId), now()->addMinutes(10), function () use ($timecodeId) {
-            $timecode = MovieTimecode::with(['segments' => function ($query) {
+            $timecode = MovieTimecode::with(['twitchContentClassification', 'segments' => function ($query) {
                 $query->orderBy('start_time');
             }])->find($timecodeId);
 
@@ -64,6 +65,7 @@ class TimecodeService
             return [
                 'id' => $timecode->id,
                 'movie_id' => $timecode->movie_id,
+                'content_classifications' => $timecode->twitchContentClassification->pluck('value')->toArray(),
                 'segments' => $timecode->segments->map(fn($s) => TimecodeSegmentData::toArrayFromModel($s))->toArray()
             ];
         });
@@ -73,6 +75,7 @@ class TimecodeService
         return new TimecodeData(
             id: $data['id'],
             movieId: $data['movie_id'],
+            contentClassifications: $data['content_classifications'] ?? null,
             segments: collect($data['segments'])->map(fn($s) => TimecodeSegmentData::fromArray($s))
         );
     }
@@ -110,8 +113,8 @@ class TimecodeService
                 'duration' => $data->duration
             ]);
 
+            $now = Carbon::now();
             if ($data->segments->isNotEmpty()) {
-                $now = Carbon::now();
                 $segmentData = $data->segments->map(function (TimecodeSegmentEditData $segment) use ($user, $movie, $timecode, $now) {
                     return [
                         'user_id' => $user->id,
@@ -126,6 +129,20 @@ class TimecodeService
                     ];
                 })->all();
                 MovieTimecodeSegment::insert($segmentData);
+            }
+
+            if (!empty($data->contentClassifications)) {
+                $classificationData = collect($data->contentClassifications)->map(function ($value) use ($user, $movie, $timecode, $now) {
+                    return [
+                        'user_id' => $user->id,
+                        'movie_id' => $movie->id,
+                        'timecode_id' => $timecode->id,
+                        'value' => $value,
+                        'created_at' => $now,
+                        'updated_at' => $now
+                    ];
+                })->toArray();
+                MovieTimecodeTwitchContentClassification::insert($classificationData);
             }
         });
 
@@ -146,7 +163,7 @@ class TimecodeService
      */
     public function edit(TimecodeEditData $data, User $user, int $timecodeId)
     {
-        $timecode = MovieTimecode::with('segments')->find($timecodeId);
+        $timecode = MovieTimecode::with(['segments', 'twitchContentClassification'])->find($timecodeId);
 
         if (!$timecode) throw ApiException::notFound();
 
@@ -158,6 +175,8 @@ class TimecodeService
                 $timecode->update(['duration' => $data->duration]);
             }
 
+
+            // --- SEGMENT UPDATES ---
             $existingSegments = $timecode->segments;
 
             // Get the IDs of segments that arrived in data (for updating)
@@ -204,6 +223,39 @@ class TimecodeService
             if (!empty($newSegments)) {
                 MovieTimecodeSegment::insert($newSegments);
             }
+            // -------------------------------------------
+
+
+            // --- CONTENT CLASSIFICATION UPDATE FOR TWITCH ---
+            $existingClassifications = $timecode->twitchContentClassification;
+            $existingValues = $existingClassifications->pluck('value')->toArray();
+            $newValues = $data->contentClassifications ?? [];
+
+            // Decide which ones to delete
+            $valuesToDelete = array_diff($existingValues, $newValues);
+            if (!empty($valuesToDelete)) {
+                MovieTimecodeTwitchContentClassification::timecodeId($timecode->id)
+                    ->whereIn('value', $valuesToDelete)
+                    ->delete();
+            }
+
+            // Deciding which ones to add
+            $valuesToAdd = array_diff($newValues, $existingValues);
+            if (!empty($valuesToAdd)) {
+                $now = now();
+                $insertData = array_map(fn($val) => [
+                    'user_id' => $timecode->user_id,
+                    'movie_id' => $timecode->movie_id,
+                    'timecode_id' => $timecode->id,
+                    'value' => $val,
+                    'created_at' => $now,
+                    'updated_at' => $now
+                ], $valuesToAdd);
+
+                MovieTimecodeTwitchContentClassification::insert($insertData);
+            }
+            // -------------------------------------------
+
 
             // Clearing the timecode cache
             Cache::forget(TimecodeCacheKey::authors($timecode->movie_id));
@@ -223,6 +275,7 @@ class TimecodeService
     {
         $timecode = MovieTimecode::with([
             'segments' => fn($q) => $q->orderBy('start_time'),
+            'twitchContentClassification',
             'movie.translations' => function ($q) use ($langCode) {
                 $q->whereIn('lang_code', [$langCode, 'en']);
             }
@@ -249,6 +302,7 @@ class TimecodeService
             title: $translation?->title ?? $movie->title,
             originalTitle: $movie->title,
             posterUrl: $posterPath ? TmdbClient::getImageUrl('w200', str_replace('/', '', $posterPath)) : null,
+            contentClassifications: $timecode->twitchContentClassification->pluck('value')->toArray(),
             segments: $timecode->segments->map(fn($s) => TimecodeSegmentData::fromModel($s))
         );
     }

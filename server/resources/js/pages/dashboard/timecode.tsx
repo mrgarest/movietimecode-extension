@@ -189,7 +189,7 @@ export default function TimecodePage() {
                             <div className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-0.5 text-xs text-muted font-medium">
                                 <div>{t('author')}</div>
                                 <div>{item.user.username}</div>
-                                <div>{t('segments')}</div>
+                                <div>{t('timecodes')}</div>
                                 <div>{item.segments_count}</div>
                                 <div>{t('used')}</div>
                                 <div>{item.used_count}</div>

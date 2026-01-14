@@ -59,6 +59,11 @@ class MovieTimecode extends Model
         return $this->hasMany(MovieTimecodeSegment::class, 'timecode_id');
     }
 
+    public function twitchContentClassification()
+    {
+        return $this->hasMany(MovieTimecodeTwitchContentClassification::class, 'timecode_id');
+    }
+
     public function scopeUserId(Builder $query, $id): Builder
     {
         return $query->where('user_id', $id);

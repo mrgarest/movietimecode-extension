@@ -22,6 +22,7 @@ export interface TimecodeAuthor {
 export interface TimecodeResponse extends ServerResponse {
   id: number;
   movie_id: number;
+  content_classifications: number[] | null;
   segments: TimecodeSegment[] | null;
 }
 
@@ -42,5 +43,6 @@ export interface TimecodeEditor extends ServerResponse {
   title: string | null;
   original_title: string;
   poster_url: string | null;
+  content_classifications: number[] | null;
   segments: TimecodeSegment[] | null;
 }

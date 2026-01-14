@@ -3,6 +3,8 @@ export enum TimecodeTag {
   VIOLENCE = 101,
   SENSITIVE_EXPRESSIONS = 102,
   SEXUAL_CONTENT_WITHOUT_NUDITY = 103,
+  USE_DRUGS_ALCOHOL_TOBACCO = 104,
+  PROHIBITED_SYMBOLS = 105
 }
 
 export enum TimecodeAction {
@@ -12,12 +14,12 @@ export enum TimecodeAction {
   skip = 103,
   mute = 104,
   pause = 105,
-  obsSceneChange = 106,
+  obsSceneChange = 106
 }
 
 export enum BlurPower {
   light = "light",
   base = "base",
   strong = "strong",
-  max = "max",
+  max = "max"
 }

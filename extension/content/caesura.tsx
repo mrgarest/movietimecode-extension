@@ -25,8 +25,11 @@ let isChatConnected: boolean = false;
 let user: User | undefined = undefined;
 let settings: Settings;
 let nudity: TimecodeAction;
+let sexualContentWithoutNudity: TimecodeAction;
 let violence: TimecodeAction;
 let sensitiveExpressions: TimecodeAction;
+let useDrugsAlcoholTobacco: TimecodeAction;
+let prohibitedSymbols: TimecodeAction;
 let chatClient: ChatClient | undefined = undefined;
 let movie: {
     title?: string
@@ -79,10 +82,13 @@ const handleSettings = (settings: Settings, isOnChanged: boolean) => {
     nudity = (settings.nudity as TimecodeAction) ?? StorageDefault.nudity;
 
     violence = (settings.violence as TimecodeAction) ?? StorageDefault.violence;
+    sexualContentWithoutNudity = (settings.sexualContentWithoutNudity as TimecodeAction) ?? StorageDefault.sexualContentWithoutNudity;
     sensitiveExpressions = (settings.sensitiveExpressions as TimecodeAction) ?? StorageDefault.sensitiveExpressions;
+    useDrugsAlcoholTobacco = (settings.useDrugsAlcoholTobacco as TimecodeAction) ?? StorageDefault.useDrugsAlcoholTobacco;
+    prohibitedSymbols = (settings.prohibitedSymbols as TimecodeAction) ?? StorageDefault.prohibitedSymbols;
 
     // obs
-    neededOBSClient = [nudity, violence, sensitiveExpressions].includes(TimecodeAction.obsSceneChange);
+    neededOBSClient = [nudity, sexualContentWithoutNudity, violence, sensitiveExpressions, useDrugsAlcoholTobacco, prohibitedSymbols].includes(TimecodeAction.obsSceneChange);
 
     if (!neededOBSClient && obsClient) {
         obsClient.disconnect();
@@ -452,10 +458,16 @@ const getActionForTag = (tag: TimecodeTag): TimecodeAction | null => {
     switch (tag) {
         case TimecodeTag.NUDITY:
             return nudity;
+        case TimecodeTag.SEXUAL_CONTENT_WITHOUT_NUDITY:
+            return sexualContentWithoutNudity;
         case TimecodeTag.VIOLENCE:
             return violence;
         case TimecodeTag.SENSITIVE_EXPRESSIONS:
             return sensitiveExpressions;
+        case TimecodeTag.USE_DRUGS_ALCOHOL_TOBACCO:
+            return useDrugsAlcoholTobacco;
+        case TimecodeTag.PROHIBITED_SYMBOLS:
+            return prohibitedSymbols;
         default:
             return null;
     }
@@ -755,66 +767,4 @@ async function heandleHotkey(command: string) {
             break;
     }
     isHotkeyPressed = false;
-}
-
-/**
- * Sets forced censorship for the player
- * 
- * @param action - TimecodeAction
- */
-async function setForcedActionPlayer(action: TimecodeAction): Promise<void> {
-    if (!player) return;
-    switch (action) {
-        case TimecodeAction.blur:
-            playerContentCensorshipEnabled.blur = [
-                "light",
-                "strong",
-                "max",
-                "base"
-            ].some(cls => player!.classList.contains("mt-player-blur-" + cls)) ? false : !playerContentCensorshipEnabled.blur;
-            setPlayerBlur(playerContentCensorshipEnabled.blur);
-            break;
-        case TimecodeAction.hide:
-            playerContentCensorshipEnabled.hide = !isPlayerVisible(player) ? false : !playerContentCensorshipEnabled.hide;
-            playerContentCensorshipEnabled.hide ? playerInvisible(player) : playerVisible(player);
-            break;
-        case TimecodeAction.obsSceneChange:
-            try {
-                if (!obsClient) {
-                    await connectOBS();
-                }
-
-                if (!obsClient || !obsCensorScene) {
-                    playerPause(player);
-                    playerContentCensorshipEnabled.obsSceneChange = false;
-                    break;
-                }
-
-                const scene = await obsClient.getActiveScene();
-                if (!scene) {
-                    playerContentCensorshipEnabled.obsSceneChange = false;
-                    break;
-                }
-
-                if (scene.id !== obsCensorScene.id) {
-                    mainSceneOBS = scene;
-                    playerContentCensorshipEnabled.obsSceneChange = true;
-                    await obsClient.setActiveScene(obsCensorScene);
-                    break;
-                }
-
-                if (mainSceneOBS && mainSceneOBS.id !== obsCensorScene.id) {
-                    await obsClient.setActiveScene(mainSceneOBS);
-                    playerContentCensorshipEnabled.obsSceneChange = false;
-                    break;
-                }
-            } catch (error) {
-                if (config.debug) {
-                    console.error("Hotkey obs error:", error);
-                }
-            }
-            break;
-        default:
-            break;
-    }
 }
