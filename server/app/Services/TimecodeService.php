@@ -163,7 +163,9 @@ class TimecodeService
      */
     public function edit(TimecodeEditData $data, User $user, int $timecodeId)
     {
-        $timecode = MovieTimecode::with(['segments', 'twitchContentClassification'])->find($timecodeId);
+        $timecode = MovieTimecode::when($user->isAdmin(), function ($query) {
+            return $query->withTrashed();
+        })->with(['segments', 'twitchContentClassification'])->find($timecodeId);
 
         if (!$timecode) throw ApiException::notFound();
 
@@ -273,7 +275,9 @@ class TimecodeService
      */
     public function editor(User $user, int $timecodeId, string $langCode = 'uk'): ?TimecodeEditorData
     {
-        $timecode = MovieTimecode::with([
+        $timecode = MovieTimecode::when($user->isAdmin(), function ($query) {
+            return $query->withTrashed();
+        })->with([
             'segments' => fn($q) => $q->orderBy('start_time'),
             'twitchContentClassification',
             'movie.translations' => function ($q) use ($langCode) {
