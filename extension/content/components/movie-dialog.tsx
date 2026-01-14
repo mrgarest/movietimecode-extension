@@ -88,6 +88,10 @@ const MovieDialog = ({ data, onSelected }: RootProps) => {
         setLoading(true);
         if (step == 0) {
             try {
+                if (author.timecode.id === timecode?.id) {
+                    setStep(1);
+                    return;
+                }
                 const data = await fetchBackground<TimecodeResponse>(
                     `${config.baseUrl}/api/v2/timecodes/${author.timecode.id}`
                 );
