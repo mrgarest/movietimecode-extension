@@ -221,9 +221,10 @@ export default function TimecodeEditorPage({ id = null, movieSearch = null, onMe
         }
 
         // Checking for conflicts in time
-        const segmentSeconds = values.segments.map(tc => ({
-            start: timeToseconds(tc.start_time.hours, tc.start_time.minutes, tc.start_time.seconds),
-            end: timeToseconds(tc.end_time.hours, tc.end_time.minutes, tc.end_time.seconds),
+        const currentSegmentsData = values.segments.map(s => ({
+            start: timeToseconds(s.start_time.hours, s.start_time.minutes, s.start_time.seconds),
+            end: timeToseconds(s.end_time.hours, s.end_time.minutes, s.end_time.seconds),
+            tag_id: s.tag_id === '' ? null : Number(s.tag_id)
         }));
 
 
@@ -252,20 +253,19 @@ export default function TimecodeEditorPage({ id = null, movieSearch = null, onMe
                 }
 
                 // Checking for conflicts with other timecodes
-                for (let i = 0; i < segmentSeconds.length; i++) {
+                for (let i = 0; i < currentSegmentsData.length; i++) {
                     if (i === index) continue;
 
-                    const other = segmentSeconds[i];
+                    const other = currentSegmentsData[i];
+                    const currentTag = tc.tag_id === '' ? null : Number(tc.tag_id);
 
-                    const isConflict =
-                        startsecondss === other.start ||
-                        startsecondss === other.end ||
-                        endsecondss === other.start ||
-                        endsecondss === other.end ||
+                    // Time intersection condition 
+                    const isTimeOverlap = startsecondss <= other.end && endsecondss >= other.start;
+                    
+                    // A conflict arises ONLY if the time overlaps AND the tags are the same.
+                    const isSameAction = currentTag === other.tag_id;
 
-                        (startsecondss < other.end && endsecondss > other.start);
-
-                    if (isConflict) {
+                    if (isTimeOverlap && isSameAction) {
                         isError = true;
                         form.setError(`segments.${index}.start_time`, {
                             type: "manual",

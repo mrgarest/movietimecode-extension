@@ -1,7 +1,7 @@
 import { TimecodeAction } from "@/enums/timecode";
-import { TSegment } from "@/interfaces/timecode";
 import { secondsToTime } from "./format";
 import config from "config";
+import { TimecodeSegment } from "@/interfaces/timecode";
 
 /**
  * Logs information about the censorship action for debugging.
@@ -16,7 +16,7 @@ export function censorshipActionLog({
   error?: boolean;
   isCensored: boolean;
   time: number;
-  segment: TSegment;
+  segment: TimecodeSegment;
   action: TimecodeAction | null;
 }) {
   if (!config.debug) return;

@@ -46,7 +46,9 @@ type Thtml = HTMLIFrameElement | undefined;
 let player: Thtml = undefined;
 
 let timecodeSegments: TimecodeSegment[] | null = null;
-let activeCensorshipActions: TimecodeSegment[] = [];
+
+// Store all active segments for each action
+const currentActionsState = new Map<TimecodeAction, TimecodeSegment | null>();
 
 let currentMovieTime: number = 0;
 
@@ -232,9 +234,18 @@ function handleCensorship(segments: TimecodeSegment[] | null) {
  * Handles turning off censorship by removing the player listener and resetting the timecode segments and active censorship actions.
  */
 function handleTurnOffCensorship() {
+    currentActionsState.forEach((segment, action) => {
+        if (segment) {
+            setPlayerCensorshipAction({
+                isCensored: false,
+                time: currentMovieTime,
+                action: action,
+                segment: segment
+            });
+        }
+    });
     isCensorshipEnabled = false;
     timecodeSegments = null;
-    activeCensorshipActions = [];
 
     obsClient?.disconnect();
 }
@@ -404,49 +415,65 @@ function handleMessage(e: MessageEvent) {
 }
 
 /**
- * Handles player time
+ * Handles player time.
  */
 function handleTimePlayer(time: number) {
-    if (!player || !isCensorshipEnabled || timecodeSegments == null) return;
+    if (!player || !isCensorshipEnabled || !timecodeSegments) return;
 
     const timeBuffer: number = (settings.timeBuffer as number) || StorageDefault.timeBuffer;
 
-    const segments: TimecodeSegment[] = timecodeSegments.filter(
+    // Find all segments for the current time
+    const currentSegments = timecodeSegments.filter(
         (segment) =>
             time >= segment.start_time - timeBuffer &&
             time < segment.end_time + timeBuffer
     );
 
-    const isTimecode: boolean = segments.length > 0;
-
-    if (isTimecode) {
-        segments.forEach((segment) => {
-            if (!activeCensorshipActions.some((e) => e.id == segment.id)) {
-                activeCensorshipActions.push(segment);
-                setPlayerCensorshipAction({
-                    isCensored: true,
-                    time: time,
-                    action: getActionForTag(segment.tag_id),
-                    segment: segment,
-                });
+    //  Determine which types of actions MUST be active now
+    const nextActionsMap = new Map<TimecodeAction, TimecodeSegment>();
+    currentSegments.forEach(segment => {
+        const action = getActionForTag(segment.tag_id);
+        if (action !== null) {
+            if (!nextActionsMap.has(action)) {
+                nextActionsMap.set(action, segment);
             }
-        });
-    }
+        }
+    });
 
-    activeCensorshipActions
-        .filter((f) => !segments.some((segment) => segment.id === f.id))
-        .forEach((segment) => {
+    // 3. Checking all possible actions
+    const allPossibleActions = Object.values(TimecodeAction).filter(v => typeof v === 'number') as TimecodeAction[];
+
+    allPossibleActions.forEach(action => {
+        const activeSegmentInState = currentActionsState.get(action) || null;
+        const targetSegment = nextActionsMap.get(action) || null;
+
+        // If the action is to begin: In a null state, but with a segment in the plans
+        if (activeSegmentInState === null && targetSegment !== null) {
+            currentActionsState.set(action, targetSegment);
+            setPlayerCensorshipAction({
+                isCensored: true,
+                time: time,
+                action: action,
+                segment: targetSegment
+            });
+        }
+
+        // if the action is to end. There was a segment in the state, but it is not in the plans
+        else if (activeSegmentInState !== null && targetSegment === null) {
             setPlayerCensorshipAction({
                 isCensored: false,
                 time: time,
-                action: getActionForTag(segment.tag_id),
-                segment: segment,
+                action: action,
+                segment: activeSegmentInState
             });
+            currentActionsState.set(action, null);
+        }
 
-            activeCensorshipActions = activeCensorshipActions.filter(
-                (item) => item.id !== segment.id
-            );
-        });
+        // If the action continues but the segment has changed (e.g., one Skip has ended and another has begun)
+        else if (activeSegmentInState !== null && targetSegment !== null && activeSegmentInState.id !== targetSegment.id) {
+            currentActionsState.set(action, targetSegment);
+        }
+    });
 }
 
 /**
