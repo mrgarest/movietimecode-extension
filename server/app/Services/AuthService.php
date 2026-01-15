@@ -40,7 +40,7 @@ class AuthService
         $driver = Socialite::driver(AuthProvider::TWITCH->value);
 
         $scopes = ['user:read:email'];
-        if ($target === self::TARGET_EXTENSION) $scopes = array_merge($scopes, ['chat:edit', 'chat:read']);
+        if ($target === self::TARGET_EXTENSION) $scopes = array_merge($scopes, ['chat:edit', 'chat:read', 'channel:manage:broadcast']);
 
         return $driver->scopes($scopes)->redirect();
     }

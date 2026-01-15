@@ -12,4 +12,4 @@ Schedule::command('queue:process-jobs')->everyMinute();
 
 Schedule::command('cache:gc')->hourly();
 
-Schedule::command('model:prune')->daily();
+Schedule::command('model:prune')->hourly();

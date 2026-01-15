@@ -66,6 +66,7 @@ Route::prefix('v2')->group(function () {
         ->group(function () {
             Route::get('/stream/status', 'streamStatus');
             Route::post('/token', 'token');
+            Route::post('/content-classification', 'contentClassification');
         });
 
     Route::prefix('movies')->group(function () {

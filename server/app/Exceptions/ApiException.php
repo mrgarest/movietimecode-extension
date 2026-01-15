@@ -63,6 +63,32 @@ class ApiException extends Exception
     }
 
     /**
+     * Missing scope - 400
+     */
+    public static function missingScope(string $message = 'Missing scope', ?array $details = null): self
+    {
+        return new static(
+            code: 'MISSING_SCOPE',
+            status: Response::HTTP_UNAUTHORIZED,
+            message: $message,
+            details: $details
+        );
+    }
+
+    /**
+     * Forbidden - 403
+     */
+    public static function forbidden(?array $details = null): self
+    {
+        return new static(
+            code: 'FORBIDDEN',
+            status: Response::HTTP_FORBIDDEN,
+            message: 'Forbidden',
+            details: $details
+        );
+    }
+
+    /**
      * Not Found - 404
      */
     public static function notFound(?array $details = null): self

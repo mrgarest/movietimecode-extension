@@ -6,8 +6,13 @@ class TwitchCacheKey
 {
     private const ROT = 'twitch.';
 
-    public static function stream(string $username): string
+    public static function stream(int $id): string
     {
-        return  self::ROT . 'stream.' . md5($username);
+        return  self::ROT . 'stream.' . $id;
+    }
+
+    public static function accountId(int $id): string
+    {
+        return  self::ROT . 'ccountId.' . $id;
     }
 }
