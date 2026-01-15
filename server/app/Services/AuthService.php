@@ -128,6 +128,7 @@ class AuthService
                             ],
                             'expires_at' => Carbon::now()->addMinutes(5),
                         ]);
+                        break;
                     case self::TARGET_SERVER:
                         // Server login uses long-lived Access Tokens
                         $token = $user->createToken('Server', [self::TARGET_SERVER])->accessToken;
