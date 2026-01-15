@@ -103,7 +103,7 @@ ul {
 
 /*-------------------- legal --------------------*/
 .legal {
-    @apply container space-y-6;
+    @apply container space-y-6 overflow-hidden;
 }
 
 .legal > section {
@@ -119,6 +119,32 @@ ul {
 }
 
 .legal p,
-.legal ul {
-    @apply text-sm sm:text-base text-gray-200;
+.legal ul,
+.table-border tbody {
+    @apply text-sm sm:text-base text-foreground/80;
+}
+
+/*-------------------- table-border --------------------*/
+@layer components {
+    .table-border {
+        @apply my-4 w-full border-separate border-spacing-0 text-left border border-secondary rounded-md overflow-hidden;
+    }
+
+    .table-border th,
+    .table-border td {
+        @apply border-b border-r border-secondary px-4 py-2;
+    }
+
+    .table-border th:last-child,
+    .table-border td:last-child {
+        @apply border-r-0;
+    }
+
+    .table-border tr:last-child td {
+        @apply border-b-0;
+    }
+
+    .table-border th {
+        @apply font-bold;
+    }
 }
