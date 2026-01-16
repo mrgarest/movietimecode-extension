@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/app/components/ui/select"
-import { StorageDefault } from '@/utils/storage-options'
-import { Settings } from '@/interfaces/storage'
+import { SettingsOBSClientNull } from '@/interfaces/settings'
 import { Input } from '@/app/components/ui/input';
 import config from 'config';
 import { zodResolver } from "@hookform/resolvers/zod"
@@ -21,6 +20,8 @@ import SettingsCard from '@/app/components/settings-card';
 import { cn } from '@/lib/utils';
 import i18n from '@/lib/i18n';
 import { ScrollArea } from '../components/ui/scroll-area';
+import { useSyncSetting } from '@/hooks/useSyncSetting';
+import { getSettings, updateSetting } from '@/utils/settings';
 
 const formSchemaConnection = z.object({
     host: z.string().ip(),
@@ -30,7 +31,7 @@ const formSchemaConnection = z.object({
 });
 
 export default function OBSControlPage() {
-    const [settings, setSettings] = useState<Settings>({});
+    const [obsClient, setObsClient] = useState<SettingsOBSClientNull>(null);
     const [isConnectionEnabled, setConnectionEnabled] = useState<boolean>(true);
     const [isSceneEnabled, setSceneEnabled] = useState<boolean>(false);
     const [isTestEnabled, setTestEnabled] = useState<boolean>(false);
@@ -53,33 +54,20 @@ export default function OBSControlPage() {
     });
 
     useEffect(() => {
-        if (chrome?.storage?.sync) {
-            chrome.storage.sync.get('settings', (result) => {
-                const curentSettings: Settings = result.settings ?? {};
-                curentSettings.obsCensorScene = curentSettings.obsCensorScene as string | null ?? StorageDefault.obsCensorScene;
+        getSettings().then(settings => {
+            if (settings.obsClient) {
+                formConnection.setValue('host', settings.obsClient.host);
+                formConnection.setValue('port', settings.obsClient.port);
+                formConnection.setValue('auth', settings.obsClient.auth);
+                formConnection.setValue('type', settings.obsClient.type);
+                setTestEnabled(true);
+                setSceneEnabled(true);
+                setObsClient(settings.obsClient);
+            } else setObsClient(null);
 
-                if (curentSettings.obsClient) {
-                    formConnection.setValue('host', curentSettings.obsClient.host);
-                    formConnection.setValue('port', curentSettings.obsClient.port);
-                    formConnection.setValue('auth', curentSettings.obsClient.auth);
-                    formConnection.setValue('type', curentSettings.obsClient.type);
-                    setTestEnabled(true);
-                    setSceneEnabled(true);
-                } else curentSettings.obsClient = null;
-
-                setSettings(curentSettings);
-
-                setObsCensorSceneName(curentSettings.obsCensorScene);
-            });
-        } else if (config.debug) {
-            console.warn("chrome.storage is not available.");
-        }
+            setObsCensorSceneName(settings.obsCensorScene);
+        });
     }, []);
-
-    const setStorage = (settings: Settings, callback: () => void) => {
-        setSettings(settings);
-        chrome.storage.sync.set({ settings: settings }, callback);
-    }
 
     const setEnabledButtons = (enabled: boolean) => {
         setSceneEnabled(enabled);
@@ -96,13 +84,14 @@ export default function OBSControlPage() {
         if (!isConnectionEnabled) return;
         try {
             setEnabledButtons(false);
-            settings.obsClient = {
+            const obsClientSettings: SettingsOBSClientNull = {
                 type: values.type,
                 host: values.host,
                 port: values.port,
-                auth: values.auth,
+                auth: values.auth
             };
-            const obsClient = new OBSClient(settings.obsClient);
+
+            const obsClient = new OBSClient(obsClientSettings);
             obsClient.onError((_msg) => {
                 setConnectionEnabled(true);
             });
@@ -110,17 +99,18 @@ export default function OBSControlPage() {
             const isConnected = await obsClient.connect();
             obsClient.disconnect();
             if (isConnected) {
-                setStorage(settings, () => {
-                    toast.success(i18n.t("obsSuccessfullyConnected"))
-                    setEnabledButtons(true);
-                });
+                setObsClient(obsClientSettings);
+                updateSetting('obsClient', obsClientSettings);
+                toast.success(i18n.t("obsSuccessfullyConnected"))
+                setEnabledButtons(true);
                 return;
             }
         } catch (e) {
 
         }
         toast.error(i18n.t("connectionFailed"));
-        settings.obsClient = null;
+        setObsClient(null); 
+        updateSetting('obsClient', null);
         setConnectionEnabled(true);
     }
 
@@ -128,26 +118,26 @@ export default function OBSControlPage() {
      * Gets a list of scenes if possible and opens a dialog for scene selection.
      */
     async function heandleChangeScene() {
-        if (!settings.obsClient) {
+        if (!obsClient) {
             toast.error(i18n.t("connectionFailed"));
             return;
         }
 
         try {
-            const obsClient = new OBSClient(settings.obsClient);
-            const isConnected = await obsClient.connect();
+            const client = new OBSClient(obsClient);
+            const isConnected = await client.connect();
             if (!isConnected) {
                 toast.error(i18n.t("connectionFailed"));
-                obsClient.disconnect();
+                client.disconnect();
                 return;
             }
-            const scenes = await obsClient.getScene();
+            const scenes = await client.getScene();
             if (!scenes || scenes.length == 0) {
                 toast.error(i18n.t("failedGetScenes"));
-                obsClient.disconnect();
+                client.disconnect();
                 return;
             }
-            obsClient.disconnect();
+            client.disconnect();
             setObsScene(scenes);
             setChangeSceneDialog(true);
         } catch (e) {
@@ -162,20 +152,18 @@ export default function OBSControlPage() {
      * @param name 
      */
     function heandleSelectScene(name: string) {
-        settings.obsCensorScene = name;
-        setStorage(settings, () => {
-            setObsCensorSceneName(name);
-            setChangeSceneDialog(false);
-            setObsScene([]);
-            toast.success(i18n.t("newSceneSuccessfullyConnected"));
-        });
+        updateSetting('obsCensorScene', name);
+        setObsCensorSceneName(name);
+        setChangeSceneDialog(false);
+        setObsScene([]);
+        toast.success(i18n.t("newSceneSuccessfullyConnected"));
     };
 
     const delay = (m: number) => new Promise((resolve) => setTimeout(resolve, m));
 
     const handleTest = async () => {
         if (!isTestEnabled) return;
-        if (!settings.obsClient) {
+        if (!obsClient) {
             toast.error(i18n.t("connectionFailed"));
             return;
         }
@@ -183,42 +171,42 @@ export default function OBSControlPage() {
         setTestLog([]);
 
         try {
-            const obsClient = new OBSClient(settings.obsClient);
-            obsClient.onError((_msg) => {
+            const client = new OBSClient(obsClient);
+            client.onError((_msg) => {
                 setEnabledButtons(true);
             })
 
-            const isConnected = await obsClient.connect();
+            const isConnected = await client.connect();
             if (isConnected) {
                 setTestLog((prevLogs) => [...prevLogs, { ok: true, msg: i18n.t("obsSuccessfullyConnected") }]);
-                const scenes = await obsClient.getScene();
+                const scenes = await client.getScene();
                 if (!scenes) {
                     setTestLog((prevLogs) => [...prevLogs, { ok: false, msg: i18n.t("failedGetScenes") }]);
-                    obsClient.disconnect();
+                    client.disconnect();
                     setEnabledButtons(true);
                     return;
                 }
 
-                const obsCensorScene = settings.obsCensorScene;
-                const censorScene = await obsClient.findScene(obsCensorScene!, scenes);
+                const obsCensorScene = obsCensorSceneName;
+                const censorScene = await client.findScene(obsCensorScene!, scenes);
                 if (!censorScene) {
                     setTestLog((prevLogs) => [...prevLogs, { ok: false, msg: i18n.t("unableFindScene", { scene: obsCensorScene }) }]);
-                    obsClient.disconnect();
+                    client.disconnect();
                     setEnabledButtons(true);
                     return;
                 }
                 setTestLog((prevLogs) => [...prevLogs, { ok: true, msg: i18n.t("sceneFound", { scene: obsCensorScene }) }]);
 
-                const activeScene = await obsClient.getActiveScene();
+                const activeScene = await client.getActiveScene();
                 if (!activeScene) {
                     setTestLog((prevLogs) => [...prevLogs, { ok: false, msg: i18n.t("unableFindActiveScene") }]);
-                    obsClient.disconnect();
+                    client.disconnect();
                     setEnabledButtons(true);
                     return;
                 }
                 if (activeScene.id == censorScene.id) {
                     setTestLog((prevLogs) => [...prevLogs, { ok: false, msg: i18n.t("selectOtherSceneAndRepeatTest") }]);
-                    obsClient.disconnect();
+                    client.disconnect();
                     setEnabledButtons(true);
                     return;
                 }
@@ -228,11 +216,11 @@ export default function OBSControlPage() {
 
                 setTestLog((prevLogs) => [...prevLogs, { ok: true, msg: i18n.t("pause") + " ..." }]);
                 await delay(s);
-                let isSetScene = await obsClient.setActiveScene(censorScene);
+                let isSetScene = await client.setActiveScene(censorScene);
 
                 if (!isSetScene) {
                     setTestLog((prevLogs) => [...prevLogs, { ok: false, msg: i18n.t("unableDisplayScene", { scene: obsCensorScene }) }]);
-                    obsClient.disconnect();
+                    client.disconnect();
                     setEnabledButtons(true);
                     return;
                 }
@@ -240,21 +228,21 @@ export default function OBSControlPage() {
 
                 setTestLog((prevLogs) => [...prevLogs, { ok: true, msg: i18n.t("pause") + " ..." }]);
                 await delay(s);
-                isSetScene = await obsClient.setActiveScene(activeScene);
+                isSetScene = await client.setActiveScene(activeScene);
 
                 if (!isSetScene) {
                     setTestLog((prevLogs) => [...prevLogs, { ok: false, msg: i18n.t("unableDisplayScene", { scene: activeScene.name }) }]);
-                    obsClient.disconnect();
+                    client.disconnect();
                     setEnabledButtons(true);
                     return;
                 }
                 setTestLog((prevLogs) => [...prevLogs, { ok: true, msg: i18n.t("sceneActivated", { scene: activeScene.name }) }]);
 
-                obsClient.disconnect();
+                client.disconnect();
 
                 setTestLog((prevLogs) => [...prevLogs, { ok: true, msg: i18n.t("testSuccessfullyPassed") }]);
             } else {
-                obsClient.disconnect();
+                client.disconnect();
                 setTestLog((prevLogs) => [...prevLogs, { ok: false, msg: i18n.t("connectionFailed") }]);
             }
         } catch (e) {

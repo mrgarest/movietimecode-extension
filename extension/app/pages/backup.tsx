@@ -1,11 +1,11 @@
 import { useState } from 'react';
-import { Settings } from '@/interfaces/storage'
-import config from "config";
+import { Settings } from '@/interfaces/settings'
 import i18n from '@/lib/i18n';
 import { Button } from '../components/ui/button';
 import { HardDriveDownload, HardDriveUpload } from 'lucide-react';
 import toast from "react-hot-toast";
 import { SpinnerFullScreen } from '../components/ui/spinner';
+import { getSettings, updateSettings } from '@/utils/settings';
 
 export default function BackupPage() {
     const [isSpinner, setSpinner] = useState<boolean>(false);
@@ -16,8 +16,8 @@ export default function BackupPage() {
     const handleExport = () => {
         if (!chrome?.storage?.sync) return;
         setSpinner(true);
-        chrome.storage.sync.get('settings', (result) => {
-            const curentSettings: Settings = result.settings ?? {};
+        getSettings().then(curentSettings => {
+            console.log(curentSettings);
             const {
                 obsClient,
                 obsCensorScene,
@@ -45,66 +45,38 @@ export default function BackupPage() {
         input.type = "file";
         input.accept = "application/json";
 
-        input.onchange = () => {
+        input.onchange = async () => {
             const file = input.files?.[0];
             if (!file) return;
 
             const reader = new FileReader();
-
-            reader.onload = (event) => {
+            reader.onload = async (event) => {
                 setSpinner(true);
                 try {
                     const text = event.target?.result as string;
-                    const imported: any = JSON.parse(text);
+                    const imported = JSON.parse(text) as Partial<Settings>;
 
                     if (typeof imported !== "object" || imported === null) {
-                        toast.error(i18n.t("invalidFileFormat"));
-                        return;
+                        throw new Error("Invalid format");
                     }
 
-                    chrome.storage.sync.get("settings", (result) => {
-                        const current: Settings = result.settings ?? {};
+                    // Delete keys that cannot be imported (security)
+                    delete imported.obsClient;
+                    delete imported.obsCensorScene;
 
-                        const newSettings: Partial<Settings> = {};
+                    // Storage updates
+                    await updateSettings(imported);
 
-                        for (const key of Object.keys(current) as (keyof Settings)[]) {
-                            if (key === "obsClient") continue; // do not import obsClient
-                            if (key === "obsCensorScene") continue; // do not import obsCensorScene
-                            if (key in imported) {
-                                const currentValue = current[key];
-                                const importedValue = imported[key];
-
-                                // type check
-                                if (
-                                    currentValue === undefined ||
-                                    typeof importedValue === typeof currentValue ||
-                                    (Array.isArray(currentValue) && Array.isArray(importedValue))
-                                ) {
-                                    newSettings[key] = importedValue;
-                                } else if (config.debug) {
-                                    console.warn(`Type mismatch for key "${key}", skipping.`);
-                                }
-                            }
-                        }
-
-                        chrome.storage.sync.set(
-                            { settings: newSettings },
-                            () => {
-                                toast.success(i18n.t("settingsImportedSuccessfully"));
-                                setSpinner(false);
-                            }
-                        );
-                    });
+                    toast.success(i18n.t("settingsImportedSuccessfully"));
 
                 } catch (error) {
                     toast.error(i18n.t("settingsImportedError"));
+                } finally {
                     setSpinner(false);
                 }
             };
-
             reader.readAsText(file);
         };
-
         input.click();
     };
 

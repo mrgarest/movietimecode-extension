@@ -8,6 +8,7 @@ import UserPage from "./pages/user";
 import HotkeysPage from "./pages/hotkeys";
 import ChatbotPage from "./pages/chatbot";
 import BackupPage from "./pages/backup";
+import TwitchPage from "./pages/twitch";
 
 export default function App() {
     return (
@@ -15,6 +16,7 @@ export default function App() {
             <Route path="/settings" element={<SideNavLayout />}>
                 <Route index element={<SettingsPage />} />
                 <Route path="obs-control" element={<OBSControlPage />} />
+                <Route path="twitch" element={<TwitchPage />} />
                 <Route path="chatbot" element={<ChatbotPage />} />
                 <Route path="hotkeys" element={<HotkeysPage />} />
             </Route>

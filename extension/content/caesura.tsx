@@ -1,10 +1,9 @@
 import { BlurPower, TimecodeAction, TimecodeTag } from "@/enums/timecode";
-import { StorageDefault } from "@/utils/storage-options";
 import { render } from "preact";
 import config from "config";
 import { ControlBar } from "./components/control-bar";
-import { Settings, SettingsOBSClientNull } from "@/interfaces/storage";
-import { waitForDOMContentLoaded, waitForElement } from "@/utils/page";
+import { Settings, SettingsOBSClientNull } from "@/interfaces/settings";
+import { setHeaderFonts, waitForDOMContentLoaded, waitForElement } from "@/utils/page";
 import OBSClient, { OBSType, Scene } from "@/lib/obs-client";
 import { renderQuestionDialog } from "./components/question-dialog";
 import i18n from "@/lib/i18n";
@@ -12,24 +11,20 @@ import { playAlerSound } from "@/utils/alert";
 import { censorshipActionLog } from "@/utils/log";
 import ChatClient, { ChatMessage } from "@/lib/chat-client";
 import { User } from "@/interfaces/user";
-import { getUser, isStreamLive, isTwitchTokenExpires, refreshTwitchToken } from "@/utils/user";
+import { getUser } from "@/utils/user";
 import { ChatbotCmmand } from "@/interfaces/chatbot";
 import { ChatbotAccess, ChatbotAction } from "@/enums/chatbot";
 import { secondsToTime } from "@/utils/format";
 import { isPlayerVisible, playerInvisible, playerMute, playerPause, playerPlay, playerSeek, playerUnmute, playerVisible } from "@/utils/player";
 import { TimecodeSegment } from "@/interfaces/timecode";
+import { isStreamLive, isTwitchTokenExpires, refreshTwitchToken } from "@/utils/twitch";
+import { getSettings, onSettingsChanged, SettingsDefault } from "@/utils/settings";
 
 let isHotkeyPressed: boolean = false;
 let isCensorshipEnabled: boolean = false;
 let isChatConnected: boolean = false;
 let user: User | undefined = undefined;
 let settings: Settings;
-let nudity: TimecodeAction;
-let sexualContentWithoutNudity: TimecodeAction;
-let violence: TimecodeAction;
-let sensitiveExpressions: TimecodeAction;
-let useDrugsAlcoholTobacco: TimecodeAction;
-let prohibitedSymbols: TimecodeAction;
 let chatClient: ChatClient | undefined = undefined;
 let movie: {
     title?: string
@@ -45,7 +40,7 @@ let obsCensorScene: Scene | null;
 type Thtml = HTMLIFrameElement | undefined;
 let player: Thtml = undefined;
 
-let timecodeSegments: TimecodeSegment[] | null = null;
+let timecodeSegments: TimecodeSegment[] = [];
 
 // Store all active segments for each action
 const currentActionsState = new Map<TimecodeAction, TimecodeSegment | null>();
@@ -56,9 +51,6 @@ let currentMovieTime: number = 0;
 let hasStreamLive: boolean | undefined = undefined;
 let isTryRefreshTwitchToken: boolean = false;
 let isChatbotCommandStoped: boolean = false;
-let chatbotEnabled: boolean = false;
-let chatbotConnectStreamLive: boolean = false;
-let chatbotCommands: ChatbotCmmand[] = [];
 
 const playerContentCensorshipEnabled: { blur: boolean; hide: boolean; obsSceneChange: boolean } = {
     blur: false,
@@ -66,31 +58,23 @@ const playerContentCensorshipEnabled: { blur: boolean; hide: boolean; obsSceneCh
     obsSceneChange: false,
 };
 
-chrome.storage.onChanged.addListener((changes, namespace) => {
-    for (let [key, { oldValue, newValue }] of Object.entries(changes)) {
-        if (key != "settings") continue;
-        settings = handleSettings(newValue, true);
-    }
-});
-
 /**
  * Processes settings received from storage and updates corresponding variables.
  * @param settings Settings object received from storage.
- * @param isOnChanged Indicates if the function was called due to a settings change.
  * @returns Updated settings object.
  */
-const handleSettings = (settings: Settings, isOnChanged: boolean) => {
-
-    nudity = (settings.nudity as TimecodeAction) ?? StorageDefault.nudity;
-
-    violence = (settings.violence as TimecodeAction) ?? StorageDefault.violence;
-    sexualContentWithoutNudity = (settings.sexualContentWithoutNudity as TimecodeAction) ?? StorageDefault.sexualContentWithoutNudity;
-    sensitiveExpressions = (settings.sensitiveExpressions as TimecodeAction) ?? StorageDefault.sensitiveExpressions;
-    useDrugsAlcoholTobacco = (settings.useDrugsAlcoholTobacco as TimecodeAction) ?? StorageDefault.useDrugsAlcoholTobacco;
-    prohibitedSymbols = (settings.prohibitedSymbols as TimecodeAction) ?? StorageDefault.prohibitedSymbols;
+const handleSettings = (s: Settings) => {
+    settings = s;
 
     // obs
-    neededOBSClient = [nudity, sexualContentWithoutNudity, violence, sensitiveExpressions, useDrugsAlcoholTobacco, prohibitedSymbols].includes(TimecodeAction.obsSceneChange);
+    neededOBSClient = [
+        s.nudity,
+        s.sexualContentWithoutNudity,
+        s.violence,
+        s.sensitiveExpressions,
+        s.useDrugsAlcoholTobacco,
+        s.prohibitedSymbols
+    ].includes(TimecodeAction.obsSceneChange);
 
     if (!neededOBSClient && obsClient) {
         obsClient.disconnect();
@@ -100,17 +84,13 @@ const handleSettings = (settings: Settings, isOnChanged: boolean) => {
     }
 
     // chatbot
-    chatbotEnabled = (settings.chatbotEnabled as boolean) ?? StorageDefault.chatbotEnabled;
-    chatbotConnectStreamLive = (settings.chatbotConnectStreamLive as boolean) ?? StorageDefault.chatbotConnectStreamLive;
-    if (chatbotEnabled) {
-        chatbotCommands = ((settings.chatbotCommands as ChatbotCmmand[]) ?? StorageDefault.chatbotCommands)
-            .filter(cmd => cmd != null && cmd.command && cmd.action && cmd.access);
-
-    } else if (isChatConnected && chatClient) {
+    if (!s.chatbotEnabled && isChatConnected && chatClient) {
         chatClient.disconnect();
     }
     return settings;
 };
+
+onSettingsChanged(handleSettings);
 
 /**
  * Determines the player and movie title based on the site domain.
@@ -153,17 +133,6 @@ const playerMap: Record<
     "uakino.best": uakino
 };
 
-/**
- * Adds styles to the <head> of the document.
- */
-const setHeadrStyles = () => {
-    const fontLink = document.createElement("link");
-    fontLink.href =
-        "https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap";
-    fontLink.rel = "stylesheet";
-    document.head.appendChild(fontLink);
-};
-
 (async () => {
     await waitForDOMContentLoaded();
     user = await getUser();
@@ -190,14 +159,9 @@ const setHeadrStyles = () => {
 
     if (!player || !movie?.originalTitle || !containerForControlBar) return;
 
+    handleSettings(await getSettings());
 
-    /********************** SETTINGS START **********************/
-    const storage = await chrome.storage.sync.get("settings");
-
-    settings = handleSettings(storage.settings || {}, false);
-
-    /********************** SETTINGS END **********************/
-    setHeadrStyles();
+    setHeaderFonts();
 
     const rootControlBar = document.createElement("div");
     containerForControlBar.after(rootControlBar);
@@ -221,7 +185,7 @@ const setHeadrStyles = () => {
  *
  * @param segments
  */
-function handleCensorship(segments: TimecodeSegment[] | null) {
+function handleCensorship(segments: TimecodeSegment[]) {
     timecodeSegments = segments;
     isCensorshipEnabled = true;
 
@@ -245,7 +209,7 @@ function handleTurnOffCensorship() {
         }
     });
     isCensorshipEnabled = false;
-    timecodeSegments = null;
+    timecodeSegments = [];
 
     obsClient?.disconnect();
 }
@@ -254,9 +218,9 @@ function handleTurnOffCensorship() {
  * Handles chatbot work
  */
 async function handleChatbot() {
-    if (!chatbotEnabled
+    if (!settings.chatbotEnabled
         || isChatbotCommandStoped
-        || (chatbotConnectStreamLive && hasStreamLive == false)
+        || (settings.checkStreamLive && hasStreamLive == false)
         || !player
         || isChatConnected
         || !user
@@ -285,9 +249,9 @@ async function handleChatbot() {
     }
 
     // If necessary, check whether the streamer is live
-    if (chatbotConnectStreamLive) {
+    if (settings.checkStreamLive) {
         hasStreamLive = await isStreamLive(user);
-        if (!await isStreamLive(user)) {
+        if (!hasStreamLive) {
             if (config.debug) {
                 console.log('Stream not started');
             }
@@ -309,7 +273,7 @@ async function handleChatbot() {
         const message = msg.message.trim().toLocaleLowerCase();
 
         // Search for the desired command
-        const command: ChatbotCmmand | undefined = chatbotCommands.find((cmd) => {
+        const command: ChatbotCmmand | undefined = settings.chatbotCommands.find((cmd) => {
             if (!cmd.enabled) return false;
             return cmd.command.startsWith("!") ? message.startsWith(cmd.command) : message.includes(cmd.command);
         });
@@ -418,9 +382,9 @@ function handleMessage(e: MessageEvent) {
  * Handles player time.
  */
 function handleTimePlayer(time: number) {
-    if (!player || !isCensorshipEnabled || !timecodeSegments) return;
+    if (!player || !isCensorshipEnabled || timecodeSegments.length == 0) return;
 
-    const timeBuffer: number = (settings.timeBuffer as number) || StorageDefault.timeBuffer;
+    const timeBuffer: number = (settings.timeBuffer as number) || SettingsDefault.timeBuffer;
 
     // Find all segments for the current time
     const currentSegments = timecodeSegments.filter(
@@ -484,17 +448,17 @@ function handleTimePlayer(time: number) {
 const getActionForTag = (tag: TimecodeTag): TimecodeAction | null => {
     switch (tag) {
         case TimecodeTag.NUDITY:
-            return nudity;
+            return settings.nudity;
         case TimecodeTag.SEXUAL_CONTENT_WITHOUT_NUDITY:
-            return sexualContentWithoutNudity;
+            return settings.sexualContentWithoutNudity;
         case TimecodeTag.VIOLENCE:
-            return violence;
+            return settings.violence;
         case TimecodeTag.SENSITIVE_EXPRESSIONS:
-            return sensitiveExpressions;
+            return settings.sensitiveExpressions;
         case TimecodeTag.USE_DRUGS_ALCOHOL_TOBACCO:
-            return useDrugsAlcoholTobacco;
+            return settings.useDrugsAlcoholTobacco;
         case TimecodeTag.PROHIBITED_SYMBOLS:
-            return prohibitedSymbols;
+            return settings.prohibitedSymbols;
         default:
             return null;
     }
@@ -504,8 +468,8 @@ const getActionForTag = (tag: TimecodeTag): TimecodeAction | null => {
  * Establishes a connection to the OBS client, if possible
  */
 async function connectOBS() {
-    const obsClientSettings: SettingsOBSClientNull = (settings.obsClient as SettingsOBSClientNull) || StorageDefault.obsClient;
-    const obsCensorSceneNmae: string | null = (settings.obsCensorScene as string | null) || StorageDefault.obsCensorScene;
+    const obsClientSettings: SettingsOBSClientNull = (settings.obsClient as SettingsOBSClientNull) || SettingsDefault.obsClient;
+    const obsCensorSceneNmae: string | null = (settings.obsCensorScene as string | null) || SettingsDefault.obsCensorScene;
 
     try {
         if (!obsCensorSceneNmae) {
@@ -550,7 +514,7 @@ async function connectOBS() {
  * Handles OBS client connection errors by displaying a dialog.
  */
 function handleObsClientError() {
-    const obsCensorSceneNmae: string | null = (settings.obsCensorScene as string | null) || StorageDefault.obsCensorScene;
+    const obsCensorSceneNmae: string | null = (settings.obsCensorScene as string | null) || SettingsDefault.obsCensorScene;
 
     let obsName: string;
     switch (obsCensorSceneNmae) {
@@ -711,7 +675,7 @@ function setPlayerBlur(
     enabled: boolean
 ) {
     if (!player) return;
-    const blurPower: BlurPower = (settings.blurPower as BlurPower) || StorageDefault.blurPower;
+    const blurPower: BlurPower = (settings.blurPower as BlurPower) || SettingsDefault.blurPower;
 
     const blurClasses: Record<BlurPower, string> = {
         [BlurPower.light]: "mt-player-blur-light",
@@ -738,7 +702,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
  */
 async function heandleHotkey(command: string) {
     if (!player || command !== "censoring-player-content" || isHotkeyPressed) return;
-    const playerContentCensorshipCommand = (settings.playerContentCensorshipCommand as TimecodeAction) || StorageDefault.playerContentCensorshipCommand;
+    const playerContentCensorshipCommand = (settings.playerContentCensorshipCommand as TimecodeAction) || SettingsDefault.playerContentCensorshipCommand;
     isHotkeyPressed = true;
     switch (playerContentCensorshipCommand) {
         case TimecodeAction.blur:

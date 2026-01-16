@@ -1,7 +1,7 @@
 import { useState } from 'preact/hooks';
 import { LucideProps, Search, Settings, BadgePlus, ShieldBan, CopyCheck } from "lucide-react";
 import { ESearchButtonAction, StatusIndicator } from "@/enums/control-bar";
-import { renderMovieDialog } from "./movie-dialog";
+import { renderMovieDialog, TimecodeSelect } from "./movie-dialog";
 import { renderQuestionDialog } from "./question-dialog";
 import { fetchBackground } from "@/utils/fetch";
 import config from "@/config.json";
@@ -13,12 +13,13 @@ import i18n from "@/lib/i18n";
 import { MovieSearchTimecodesResponse } from '@/interfaces/movie';
 import { ErrorCode } from '@/enums/error-code';
 import { TimecodeSegment } from '@/interfaces/timecode';
+import { updateTwitchContentClassification } from '@/utils/twitch';
 
 interface RootProps {
     player: HTMLIFrameElement;
     movie: MovieProps;
     onTurnOffCensorship: () => void
-    onCensorship: (segments: TimecodeSegment[] | null) => void
+    onCensorship: (segments: TimecodeSegment[]) => void
 };
 
 interface MovieProps {
@@ -28,8 +29,8 @@ interface MovieProps {
 
 export const ControlBar = ({ player, movie, onTurnOffCensorship, onCensorship }: RootProps) => {
     type TLucideIcon = React.ForwardRefExoticComponent<Omit<LucideProps, "ref"> & React.RefAttributes<SVGSVGElement>>;
-
     const [isSearchButtonDisabled, setSearchButtonDisabled] = useState<boolean>(false);
+    const [contentClassifications, setContentClassifications] = useState<number[]>([]);
     const [statusIndicator, setStatusIndicator] = useState<StatusIndicator>(StatusIndicator.inactive);
 
     const [searchButton, setSearchButton] = useState<{
@@ -55,6 +56,15 @@ export const ControlBar = ({ player, movie, onTurnOffCensorship, onCensorship }:
                 setStatusIndicator(StatusIndicator.inactive);
                 setButtonAction(ESearchButtonAction.searchTimecode);
                 onTurnOffCensorship();
+
+                // Handles the removal of content classification
+                if (contentClassifications.length > 0) {
+                    updateTwitchContentClassification({
+                        ids: contentClassifications,
+                        enabled: false
+                    });
+                    setContentClassifications([]);
+                }
                 break;
             default:
                 break;
@@ -109,20 +119,27 @@ export const ControlBar = ({ player, movie, onTurnOffCensorship, onCensorship }:
 
 
     /**
-    * Handles selected timecodes and activates censorship
-    * @param segments Selected timecode segments
+    * Handles selected timecodes and activates censorship.
+    * @param data Selected data
     */
-    async function handleSelectedSegment(
-        segments: TimecodeSegment[] | undefined,
-    ) {
-        if (!segments || !player) {
+    async function handleSelectedSegment(data: TimecodeSelect | undefined) {
+        if (!data || !player) {
             setButtonAction(ESearchButtonAction.searchTimecode);
             setStatusIndicator(StatusIndicator.inactive);
             return;
         }
         setButtonAction(ESearchButtonAction.turnOffCensorship);
         setStatusIndicator(StatusIndicator.active);
-        onCensorship(segments);
+        onCensorship(data.segments);
+
+        // Handles the addition of content classification
+        if (data.contentClassifications.length == 0) return;
+        const result = await updateTwitchContentClassification({
+            ids: data.contentClassifications,
+            enabled: true
+        });
+
+        setContentClassifications(result ? data.contentClassifications : []);
     }
 
     /**

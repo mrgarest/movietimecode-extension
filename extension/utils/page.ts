@@ -34,7 +34,11 @@ export const waitForElement = <T extends Element = Element>(
       if (element) {
         resolve(element);
       } else if (Date.now() - startTime >= timeout) {
-        reject(new Error(`The element “${selector}” did not appear within ${timeout} ms`));
+        reject(
+          new Error(
+            `The element “${selector}” did not appear within ${timeout} ms`
+          )
+        );
       } else {
         setTimeout(check, interval);
       }
@@ -50,3 +54,29 @@ export const waitForElement = <T extends Element = Element>(
  */
 export const setDisabledScroll = (disabled: boolean) =>
   document.body.classList.toggle("mt-no-scroll", disabled);
+
+/**
+ * Adds font support in head 
+ */
+export const setHeaderFonts = () => {
+  [
+    "https://fonts.googleapis.com/css2?family=Roboto:ital,wght@0,100..900;1,100..900&display=swap",
+    "https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap",
+  ].forEach((href) => {
+    if (document.querySelector(`link[href="${href}"]`)) return;
+
+    const link = document.createElement("link");
+    link.href = href;
+    link.rel = "stylesheet";
+
+    if (href.includes("fonts.googleapis.com")) {
+      const preconnect = document.createElement("link");
+      preconnect.rel = "preconnect";
+      preconnect.href = "https://fonts.gstatic.com";
+      preconnect.crossOrigin = "anonymous";
+      document.head.appendChild(preconnect);
+    }
+
+    document.head.appendChild(link);
+  });
+};

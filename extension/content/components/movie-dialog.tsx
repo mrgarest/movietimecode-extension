@@ -15,10 +15,14 @@ import { cn } from "@/lib/utils";
 import { TimecodeTag } from "@/enums/timecode";
 import { TwitchContentClassification } from "@/enums/twitch";
 
+export interface TimecodeSelect {
+    contentClassifications: number[];
+    segments: TimecodeSegment[];
+}
 
 interface RootProps {
     data: MovieSearchTimecodesResponse;
-    onSelected: (segment: TimecodeSegment[] | undefined) => void
+    onSelected: (data: TimecodeSelect | undefined) => void
 };
 
 const MovieDialog = ({ data, onSelected }: RootProps) => {
@@ -111,7 +115,10 @@ const MovieDialog = ({ data, onSelected }: RootProps) => {
         }
 
         if (step == 1 && timecode) {
-            onSelected(timecode.segments ?? []);
+            onSelected({
+                contentClassifications: timecode.content_classifications ?? [],
+                segments: timecode.segments ?? []
+            });
             event(EventType.TIMECODE_USED, author.timecode.id);
             setLoading(false);
             remove();

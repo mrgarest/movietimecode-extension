@@ -1,9 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import SettingsCard from '@/app/components/settings-card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/app/components/ui/select"
-import { StorageDefault } from '@/utils/storage-options';
-import { Settings } from '@/interfaces/storage'
-import config from "config";
 import i18n from '@/lib/i18n';
 import { Button } from '../components/ui/button';
 import { Switch } from '../components/ui/switch';
@@ -14,8 +11,9 @@ import { useFieldArray, useForm } from 'react-hook-form';
 import { Input } from '../components/ui/input';
 import { ChatbotAccess, ChatbotAction } from '@/enums/chatbot';
 import { CirclePlus, Trash2 } from 'lucide-react';
-import { ChatbotCmmand } from '@/interfaces/chatbot';
 import toast from "react-hot-toast";
+import { useSyncSetting } from '@/hooks/useSyncSetting';
+import { getSettings, SettingsDefault, updateSetting } from '@/utils/settings';
 
 /**
  * Form validation scheme
@@ -36,10 +34,8 @@ const formSchema = z.object({
 })
 
 export default function ChatbotPage() {
-    const [settings, setSettings] = useState<Settings>({});
-    const [chatbotEnabled, setChatbotEnabled] = useState<boolean>(StorageDefault.chatbotEnabled);
-    const [connectStreamLive, setConnectStreamLive] = useState<boolean>(StorageDefault.chatbotConnectStreamLive);
-
+    const [chatbotEnabled, setChatbotEnabled] = useState<boolean>(SettingsDefault.chatbotEnabled);
+    const { sync } = useSyncSetting();
 
     // Form initialization
     const form = useForm<z.infer<typeof formSchema>>({
@@ -55,56 +51,28 @@ export default function ChatbotPage() {
     });
 
     useEffect(() => {
-        if (chrome?.storage?.sync) {
-            chrome.storage.sync.get('settings', (result) => {
-                const curentSettings: Settings = result.settings ?? {};
-                curentSettings.chatbotEnabled = curentSettings.chatbotEnabled as boolean ?? StorageDefault.chatbotEnabled;
-                curentSettings.chatbotConnectStreamLive = curentSettings.chatbotConnectStreamLive as boolean ?? StorageDefault.chatbotConnectStreamLive;
-                curentSettings.chatbotCommands = curentSettings.chatbotCommands as ChatbotCmmand[] ?? StorageDefault.chatbotCommands;
-
-                setSettings(curentSettings);
-
-                setChatbotEnabled(curentSettings.chatbotEnabled);
-                setConnectStreamLive(curentSettings.chatbotConnectStreamLive);
-                appendCommand(curentSettings.chatbotCommands);
-            });
-        } else if (config.debug) {
-            console.warn("chrome.storage is not available.");
-        }
-    }, []);
-
-    const updateSettings = (updates: Partial<Settings>) => {
-        setSettings((prev) => {
-            const newSettings = { ...prev, ...updates };
-            chrome.storage.sync.set({ settings: newSettings }, () => { });
-            return newSettings;
+        getSettings().then(settings => {
+            setChatbotEnabled(settings.chatbotEnabled);
+            appendCommand(settings.chatbotCommands);
         });
-    };
-
-    const handleChatbotEnabled = (checked: boolean) => {
-        setChatbotEnabled(checked);
-        updateSettings({ chatbotEnabled: checked as boolean });
-    };
-
-    const handleConnectStreamLive = (checked: boolean) => {
-        setConnectStreamLive(checked);
-        updateSettings({ chatbotConnectStreamLive: checked as boolean });
-    };
+    }, []);
 
     /**
     * Saves commands
     */
     const onSubmit = async (values: z.infer<typeof formSchema>) => {
-        updateSettings({ chatbotCommands: values.commands as ChatbotCmmand[] });
+        updateSetting('chatbotCommands', values.commands);
         toast.success(i18n.t("changesSaved"));
     };
-
 
     return (
         <div className="space-y-8">
             <div className="space-y-4">
                 <h1 className="text-h1">{i18n.t('chatbot')}</h1>
-                <p className="text-sm text-foreground font-normal">{i18n.t("chatbotDescription")}</p>
+                <div className="space-y-1">
+                    <p className="text-sm text-foreground font-normal">{i18n.t("chatbotDescription")}</p>
+                    <p className="text-sm text-foreground font-normal">{i18n.t("twitchAuthWarning")}</p>
+                </div>
             </div>
             <div className="space-y-4">
                 <SettingsCard
@@ -112,16 +80,7 @@ export default function ChatbotPage() {
                     description={i18n.t("enableChatbotDescription")}>
                     <Switch
                         checked={chatbotEnabled}
-                        onCheckedChange={handleChatbotEnabled}
-                    />
-                </SettingsCard>
-                <hr />
-                <SettingsCard
-                    title={i18n.t("connectStreamLive")}
-                    description={i18n.t("connectStreamLiveDescription")}>
-                    <Switch
-                        checked={connectStreamLive}
-                        onCheckedChange={handleConnectStreamLive}
+                        onCheckedChange={sync("chatbotEnabled", setChatbotEnabled)}
                     />
                 </SettingsCard>
                 <hr />

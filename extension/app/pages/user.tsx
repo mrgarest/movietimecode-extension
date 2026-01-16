@@ -75,7 +75,7 @@ export default function UserPage() {
                 }} />}
             </div>
 
-            {user == null && <div><Button onClick={handleLogIn}><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-twitch-icon lucide-twitch"><path d="M21 2H3v16h5v4l4-4h5l4-4V2zm-10 9V7m5 4V7" /></svg>{i18n.t("logInTwitch")}</Button></div>}
+            {user == null && <div><Button onClick={handleLogIn}><svg xmlns="http://www.w3.org/2000/svg" version="1.1" id="Capa_1" x="0px" y="0px" viewBox="0 0 24 24" width="24" height="24"><g id="Layer_1-2"><path fill="currentColor" d="M6,0L1.714,4.286v15.429h5.143V24l4.286-4.286h3.429L22.286,12V0H6z M20.571,11.143l-3.429,3.429h-3.429l-3,3v-3H6.857     V1.714h13.714V11.143z" /><rect fill="currentColor" x="16.286" y="4.714" width="1.714" height="5.143" /><rect x="11.571" fill="currentColor" y="4.714" width="1.714" height="5.143" /></g></svg>{i18n.t("logInTwitch")}</Button></div>}
 
             {user != null && <div className="flex items-center justify-between gap-3">
                 <div className="flex items-center gap-3">

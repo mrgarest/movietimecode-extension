@@ -3,118 +3,56 @@ import SettingsCard from '@/app/components/settings-card';
 import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from "@/app/components/ui/select"
 import { BlurPower, TimecodeAction } from '@/enums/timecode';
 import { Input } from '@/app/components/ui/input';
-import { StorageDefault } from '@/utils/storage-options';
-import { Settings } from '@/interfaces/storage'
-import config from "config";
 import i18n from '@/lib/i18n';
+import { useSyncSetting } from '@/hooks/useSyncSetting';
+import { getSettings, SettingsDefault, updateSetting } from '@/utils/settings';
 
 export default function SettingsPage() {
-    const [settings, setSettings] = useState<Settings>({});
-    const [timeBuffer, setTimeBuffer] = useState<number>(StorageDefault.timeBuffer);
-    const [blurPower, setBlurPower] = useState<BlurPower>(StorageDefault.blurPower);
-    const [nudity, setNudity] = useState<TimecodeAction>(StorageDefault.nudity);
-    const [sexualContentWithoutNudity, setSexualContentWithoutNudity] = useState<TimecodeAction>(StorageDefault.sexualContentWithoutNudity);
-    const [violence, setViolence] = useState<TimecodeAction>(StorageDefault.violence);
-    const [sensitiveExpressions, setSensitiveExpressions] = useState<TimecodeAction>(StorageDefault.sensitiveExpressions);
-    const [useDrugsAlcoholTobacco, setUseDrugsAlcoholTobacco] = useState<TimecodeAction>(StorageDefault.useDrugsAlcoholTobacco);
-    const [prohibitedSymbols, setProhibitedSymbols] = useState<TimecodeAction>(StorageDefault.prohibitedSymbols);
+    const [timeBuffer, setTimeBuffer] = useState<number>(SettingsDefault.timeBuffer);
+    const [blurPower, setBlurPower] = useState<BlurPower>(SettingsDefault.blurPower);
+    const [nudity, setNudity] = useState<TimecodeAction>(SettingsDefault.nudity);
+    const [sexualContentWithoutNudity, setSexualContentWithoutNudity] = useState<TimecodeAction>(SettingsDefault.sexualContentWithoutNudity);
+    const [violence, setViolence] = useState<TimecodeAction>(SettingsDefault.violence);
+    const [sensitiveExpressions, setSensitiveExpressions] = useState<TimecodeAction>(SettingsDefault.sensitiveExpressions);
+    const [useDrugsAlcoholTobacco, setUseDrugsAlcoholTobacco] = useState<TimecodeAction>(SettingsDefault.useDrugsAlcoholTobacco);
+    const [prohibitedSymbols, setProhibitedSymbols] = useState<TimecodeAction>(SettingsDefault.prohibitedSymbols);
+    const [obsDisabled, setObsDisabled] = useState<boolean>(true);
+    const { sync } = useSyncSetting();
 
     useEffect(() => {
-        if (chrome?.storage?.sync) {
-            chrome.storage.sync.get('settings', (result) => {
-                const curentSettings: Settings = result.settings ?? {};
-                curentSettings.timeBuffer = curentSettings.timeBuffer as number ?? StorageDefault.timeBuffer;
-                curentSettings.blurPower = curentSettings.blurPower as BlurPower ?? StorageDefault.blurPower;
-                curentSettings.nudity = curentSettings.nudity as TimecodeAction ?? StorageDefault.nudity;
-                curentSettings.sexualContentWithoutNudity = curentSettings.sexualContentWithoutNudity as TimecodeAction ?? StorageDefault.sexualContentWithoutNudity;
-                curentSettings.violence = curentSettings.violence as TimecodeAction ?? StorageDefault.violence;
-                curentSettings.sensitiveExpressions = curentSettings.sensitiveExpressions as TimecodeAction ?? StorageDefault.sensitiveExpressions;
-                curentSettings.useDrugsAlcoholTobacco = curentSettings.useDrugsAlcoholTobacco as TimecodeAction ?? StorageDefault.useDrugsAlcoholTobacco;
-                curentSettings.prohibitedSymbols = curentSettings.prohibitedSymbols as TimecodeAction ?? StorageDefault.prohibitedSymbols;
-
-                setSettings(curentSettings);
-
-                setTimeBuffer(curentSettings.timeBuffer);
-                setBlurPower(curentSettings.blurPower);
-                setNudity(curentSettings.nudity);
-                setViolence(curentSettings.violence);
-                setSensitiveExpressions(curentSettings.sensitiveExpressions);
-                setUseDrugsAlcoholTobacco(curentSettings.useDrugsAlcoholTobacco);
-                setProhibitedSymbols(curentSettings.prohibitedSymbols);
-            });
-        } else if (config.debug) {
-            console.warn("chrome.storage is not available.");
-        }
+        getSettings().then(settings => {
+            setTimeBuffer(settings.timeBuffer);
+            setBlurPower(settings.blurPower);
+            setNudity(settings.nudity);
+            setViolence(settings.violence);
+            setSensitiveExpressions(settings.sensitiveExpressions);
+            setUseDrugsAlcoholTobacco(settings.useDrugsAlcoholTobacco);
+            setProhibitedSymbols(settings.prohibitedSymbols);
+            setObsDisabled(settings.obsClient === null || settings.obsCensorScene === null);
+        });
     }, []);
 
-    const updateSettings = (updates: Partial<Settings>) => {
-        setSettings((prev) => {
-            const newSettings = { ...prev, ...updates };
-            chrome.storage.sync.set({ settings: newSettings }, () => { });
-            return newSettings;
-        });
-    };
+    const selectItemBehavior = useMemo(() => {
+        return [
+            { disabled: false, value: TimecodeAction.noAction, text: i18n.t("inaction") },
+            { disabled: false, value: TimecodeAction.blur, text: i18n.t("blur") },
+            { disabled: false, value: TimecodeAction.hide, text: i18n.t("hide") },
+            { disabled: false, value: TimecodeAction.skip, text: i18n.t("skip") },
+            { disabled: false, value: TimecodeAction.pause, text: i18n.t("pause") },
+            { disabled: false, value: TimecodeAction.mute, text: i18n.t("mute") },
+            {
+                disabled: obsDisabled,
+                value: TimecodeAction.obsSceneChange,
+                text: i18n.t("obsSceneSwitching"),
+            },
+        ];
+    }, [obsDisabled]);
 
     const handleTimeBuffer = (event: React.ChangeEvent<HTMLInputElement>) => {
         let value = Math.max(0, Math.min(59, parseInt(event.target.value)));
         setTimeBuffer(value);
-        updateSettings({ timeBuffer: value });
+        updateSetting('timeBuffer', value);
     };
-
-    const handleBlurPower = (value: BlurPower) => {
-        setBlurPower(value);
-        updateSettings({ blurPower: value });
-    };
-
-    const handleNudity = (value: string) => {
-        const n = Number(value);
-        setNudity(n);
-        updateSettings({ nudity: n as TimecodeAction });
-    };
-
-    const handleSexualContentWithoutNudity = (value: string) => {
-        const n = Number(value);
-        setSexualContentWithoutNudity(n);
-        updateSettings({ sexualContentWithoutNudity: n as TimecodeAction });
-    };
-
-    const handleViolence = (value: string) => {
-        const n = Number(value);
-        setViolence(n);
-        updateSettings({ violence: n as TimecodeAction });
-    };
-
-    const handleSensitiveExpressions = (value: string) => {
-        const n = Number(value);
-        setSensitiveExpressions(n);
-        updateSettings({ sensitiveExpressions: n as TimecodeAction });
-    };
-
-    const handleUseDrugsAlcoholTobacco = (value: string) => {
-        const n = Number(value);
-        setUseDrugsAlcoholTobacco(n);
-        updateSettings({ useDrugsAlcoholTobacco: n as TimecodeAction });
-    };
-    const handleProhibitedSymbols = (value: string) => {
-        const n = Number(value);
-        setProhibitedSymbols(n);
-        updateSettings({ prohibitedSymbols: n as TimecodeAction });
-    };
-
-    const getSelectItemBehavior = (settings: Settings) => [
-        { disabled: false, value: TimecodeAction.noAction, text: i18n.t("inaction") },
-        { disabled: false, value: TimecodeAction.blur, text: i18n.t("blur") },
-        { disabled: false, value: TimecodeAction.hide, text: i18n.t("hide") },
-        { disabled: false, value: TimecodeAction.skip, text: i18n.t("skip") },
-        { disabled: false, value: TimecodeAction.pause, text: i18n.t("pause") },
-        { disabled: false, value: TimecodeAction.mute, text: i18n.t("mute") },
-        {
-            disabled: settings.obsClient == null || settings.obsCensorScene == null,
-            value: TimecodeAction.obsSceneChange,
-            text: i18n.t("obsSceneSwitching"),
-        },
-    ];
-    const selectItemBehavior = useMemo(() => getSelectItemBehavior(settings), [settings]);
 
     return (
         <div className="space-y-8">
@@ -124,7 +62,7 @@ export default function SettingsPage() {
                     title={i18n.t("blurStrength")}
                     description={i18n.t("blurStrengthDescription")}>
                     <Select
-                        onValueChange={handleBlurPower}
+                        onValueChange={sync("blurPower", setBlurPower)}
                         defaultValue={blurPower}
                         value={blurPower}>
                         <SelectTrigger className="w-36">
@@ -154,7 +92,7 @@ export default function SettingsPage() {
                     title={i18n.t("nudity")}
                     description={i18n.t("nudityDescription")}>
                     <Select
-                        onValueChange={handleNudity}
+                        onValueChange={sync("nudity", setNudity)}
                         defaultValue={nudity.toString()}
                         value={nudity.toString()}>
                         <SelectTrigger className="w-44">
@@ -172,7 +110,7 @@ export default function SettingsPage() {
                     title={i18n.t("sexualContentWithoutNudity")}
                     description={i18n.t("sexualContentWithoutNudityDescription")}>
                     <Select
-                        onValueChange={handleSexualContentWithoutNudity}
+                        onValueChange={sync("sexualContentWithoutNudity", setSexualContentWithoutNudity)}
                         defaultValue={sexualContentWithoutNudity.toString()}
                         value={sexualContentWithoutNudity.toString()}>
                         <SelectTrigger className="w-44">
@@ -190,7 +128,7 @@ export default function SettingsPage() {
                     title={i18n.t("violence")}
                     description={i18n.t("violenceDescription")}>
                     <Select
-                        onValueChange={handleViolence}
+                        onValueChange={sync("violence", setViolence)}
                         defaultValue={violence.toString()}
                         value={violence.toString()}>
                         <SelectTrigger className="w-44">
@@ -208,7 +146,7 @@ export default function SettingsPage() {
                     title={i18n.t("sensitiveExpressions")}
                     description={i18n.t("sensitiveExpressionsDescription")}>
                     <Select
-                        onValueChange={handleSensitiveExpressions}
+                        onValueChange={sync("sensitiveExpressions", setSensitiveExpressions)}
                         defaultValue={sensitiveExpressions.toString()}
                         value={sensitiveExpressions.toString()}>
                         <SelectTrigger className="w-44">
@@ -226,7 +164,7 @@ export default function SettingsPage() {
                     title={i18n.t("useDrugsAlcoholTobacco")}
                     description={i18n.t("useDrugsAlcoholTobaccoDescription")}>
                     <Select
-                        onValueChange={handleUseDrugsAlcoholTobacco}
+                        onValueChange={sync("useDrugsAlcoholTobacco", setUseDrugsAlcoholTobacco)}
                         defaultValue={useDrugsAlcoholTobacco.toString()}
                         value={useDrugsAlcoholTobacco.toString()}>
                         <SelectTrigger className="w-44">
@@ -244,7 +182,7 @@ export default function SettingsPage() {
                     title={i18n.t("prohibitedSymbols")}
                     description={i18n.t("prohibitedSymbolsDescription")}>
                     <Select
-                        onValueChange={handleProhibitedSymbols}
+                        onValueChange={sync("prohibitedSymbols", setProhibitedSymbols)}
                         defaultValue={prohibitedSymbols.toString()}
                         value={prohibitedSymbols.toString()}>
                         <SelectTrigger className="w-44">

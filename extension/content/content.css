@@ -29,6 +29,10 @@
   font-family: var(--mt-roboto);
 }
 
+.mt-font-inter {
+  font-family: var(--mt-inter);
+}
+
 .mt-no-scroll {
   overflow: hidden !important;
 }
@@ -69,7 +73,7 @@
 }
 /*********************** control-bar ***********************/
 .mt-control-bar {
-  font-family: var("mt-inter");
+  font-family: var(--mt-inter);
   display: flex;
   align-items: center;
   justify-content: center;
