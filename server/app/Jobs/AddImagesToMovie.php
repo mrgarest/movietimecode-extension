@@ -19,7 +19,7 @@ class AddImagesToMovie implements ShouldQueue
      */
     public function __construct(
         public int $movieId,
-        public int $tmdbId
+        public string $tmdbId
     ) {
         //
     }
