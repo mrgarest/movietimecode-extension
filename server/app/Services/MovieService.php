@@ -169,10 +169,10 @@ class MovieService
                 'lang_code' => strtolower($movieDetails['original_language']),
                 'title' => $movieDetails['original_title'],
                 'duration' => $movieDetails['runtime'] * 60,
-                'poster_path' => $movieDetails['poster_path'] != null ? str_replace('/', '', $movieDetails['poster_path']) : null,
-                'backdrop_path' => $movieDetails['backdrop_path'] != null ? str_replace('/', '', $movieDetails['backdrop_path']) : null,
+                'poster_path' => !empty($movieDetails['poster_path']) ? str_replace('/', '', $movieDetails['poster_path']) : null,
+                'backdrop_path' => !empty($movieDetails['backdrop_path']) ? str_replace('/', '', $movieDetails['backdrop_path']) : null,
                 'rating_imdb' => $infoImdb->rating ?? null,
-                'release_date' => $movieDetails['release_date']
+                'release_date' => $movieDetails['release_date'] ?? null
             ]);
 
             $now = Carbon::now();
@@ -199,7 +199,7 @@ class MovieService
                 ->map(fn($t) => [
                     'lang_code' => strtolower($t['iso_639_1']),
                     'title' => $t['data']['title'] ?? null,
-                    'poster_path' => $t['poster_path'] != null ? str_replace('/', '', $t['poster_path']) : null,
+                    'poster_path' => !empty($t['poster_path']) ? str_replace('/', '', $t['poster_path']) : null,
                 ])
                 ->filter(fn($t) => !$this->isBlacklistLanguage($t['lang_code']) && !empty($t['title']))
                 ->unique('lang_code')
