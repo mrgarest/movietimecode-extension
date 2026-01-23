@@ -228,6 +228,9 @@ const MovieDialog = ({ data, onSelected }: RootProps) => {
     )
 };
 
+/**
+ * Content classification component.
+ */
 const ContentClassificationItem = ({
     contentClassifications,
     type,
