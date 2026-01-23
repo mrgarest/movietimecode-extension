@@ -55,7 +55,7 @@ export const fetchApi = async <T>(
         options.headers["Authorization"] = `Bearer ${accessToken}`;
     }
 
-    const response = await fetch(url, {
+    const response = await fetch(`${url}${queryString}`, {
         method: options.method,
         credentials: "include",
         headers: options.headers,

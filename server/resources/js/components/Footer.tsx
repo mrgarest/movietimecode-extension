@@ -12,12 +12,13 @@ export default function Footer() {
     }[] = [
             { name: t("privacyPolicyShort"), href: "/privacy" },
             { name: "Telegram", href: "https://t.me/+B-6MNbF-t6cyZDVi", target: "_blank" },
+            { name: "GitHub", href: "https://github.com/mrgarest/movietimecode", target: "_blank" },
         ];
 
     return (
         <footer className="flex items-center justify-center px-4 py-6">
             <div className="space-y-1">
-                <nav className="flex items-center justify-center gap-3">{navItems.map((item, index) => <Linker
+                <nav className="flex items-center justify-center gap-2">{navItems.map((item, index) => <Linker
                     key={index}
                     target={item.target}
                     className="text-xs p-0.5 text-muted font-medium hover:text-foreground duration-300 select-none"

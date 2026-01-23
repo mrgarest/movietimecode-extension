@@ -29,4 +29,30 @@ class MovieSearchData
             posterUrl: TmdbClient::getImageUrl('w200', str_replace('/', '', $data['poster_path']))
         );
     }
+
+    public static function fromArray(array $data): self
+    {
+        return new self(
+            id: $data['id'] ?? null,
+            tmdbId: $data['tmdb_id'],
+            timecodeId: $data['timecode_id'] ?? null,
+            releaseYear: $data['release_year'],
+            title: $data['title'],
+            originalTitle: $data['original_title'],
+            posterUrl: $data['poster_url'] ?? null
+        );
+    }
+
+    public function toArray(): array
+    {
+        return [
+            'id' => $this->id,
+            'tmdb_id' => $this->tmdbId,
+            'timecode_id' => $this->timecodeId,
+            'release_year' => $this->releaseYear,
+            'title' => $this->title,
+            'original_title' => $this->originalTitle,
+            'poster_url' => $this->posterUrl,
+        ];
+    }
 }

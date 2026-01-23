@@ -30,4 +30,14 @@ class MovieCacheKey
     {
         return  self::ROT . 'translation.' . $id . '.' . $langCode;
     }
+
+    public static function latestChecked(string $langCode): string
+    {
+        return  self::ROT . 'latest.checked.' . $langCode;
+    }
+
+    public static function latestWithTimecodes(int $page, int $limit = 20, string $langCode): string
+    {
+        return  self::ROT . 'latest.checked.' . $page . '.' . $limit . '.' . $langCode;
+    }
 }

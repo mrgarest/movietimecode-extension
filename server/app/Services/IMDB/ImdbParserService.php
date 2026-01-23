@@ -116,12 +116,22 @@ class ImdbParserService
             ->map(function ($name, $index) use ($matches, $allowedRegions, $mapping) {
                 $metadata = $matches[2][$index] ?? '';
 
+                // Clean metadata from HTML for correct region verification
+                $cleanMetadata = strip_tags(html_entity_decode($metadata));
+
                 // Filter by rental type and region
-                if (!Str::contains($metadata, 'theatrical') || !Str::contains($metadata, $allowedRegions)) {
+                if (!Str::contains($cleanMetadata, 'theatrical') || !Str::contains($cleanMetadata, $allowedRegions)) {
                     return null;
                 }
 
-                $cleanName = trim(html_entity_decode($name, ENT_QUOTES | ENT_HTML5, 'UTF-8'));
+                // Clean up the name: remove tags, decode entities
+                $cleanName = strip_tags($name);
+                $cleanName = html_entity_decode($cleanName, ENT_QUOTES | ENT_HTML5, 'UTF-8');
+
+                // Remove non-breaking spaces (\xA0) and regular extra spaces
+                $cleanName = preg_replace('/\s+/u', ' ', $cleanName);
+                $cleanName = trim($cleanName);
+
                 $lowerName = mb_strtolower($cleanName);
 
                 // Searching for a match in the dictionary

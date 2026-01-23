@@ -34,7 +34,7 @@ export default function HeaderNavbar() {
             <header className="sm:my-6 flex items-center fixed sm:sticky top-4 left-0 right-0 z-20 px-4">
                 <nav className="grid grid-cols-2 sm:grid-cols-[1fr_auto_1fr] items-start w-full">
                     <div></div>
-                    <div className="bg-secondary rounded-full h-11 px-1 hidden sm:flex items-center justify-center border-border border gap-1 shadow-md shadow-black/30">{navItems.map((item, index) => <Linker
+                    <div className="bg-[#2e2f33] rounded-full h-11 px-1 hidden sm:flex items-center justify-center border-border border gap-1 shadow-md shadow-black/30">{navItems.map((item, index) => <Linker
                         key={index}
                         target={item.target}
                         className={cn(
@@ -43,7 +43,8 @@ export default function HeaderNavbar() {
                         )}
                         href={item.href}>{item.name}</Linker>)}</div>
                     <div className="flex items-center justify-end gap-4">
-                        <a href="https://github.com/mrgarest/movietimecode" target="_blank" rel="noopener noreferrer" className="cursor-pointer bg-secondary rounded-full size-8 p-1.5 flex items-center justify-center border-border border gap-2 shadow-md shadow-black/30"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-github-icon lucide-github"><path d="M15 22v-4a4.8 4.8 0 0 0-1-3.5c3 0 6-2 6-5.5.08-1.25-.27-2.48-1-3.5.28-1.15.28-2.35 0-3.5 0 0-1 0-3 1.5-2.64-.5-5.36-.5-8 0C6 2 5 2 5 2c-.3 1.15-.3 2.35 0 3.5A5.403 5.403 0 0 0 4 9c0 3.5 3 5.5 6 5.5-.39.49-.68 1.05-.85 1.65-.17.6-.22 1.23-.15 1.85v4" /><path d="M9 18c-4.51 2-5-2-7-2" /></svg></a>
+                        <a href="https://github.com/mrgarest/movietimecode" target="_blank" rel="noopener noreferrer" className="cursor-pointer bg-[#2e2f33] rounded-full size-8 p-1.5 flex items-center justify-center border-border border gap-2 shadow-md shadow-black/30"><svg xmlns="http://www.w3.org/2000/svg" version="1.1" width="512" height="512" x="0" y="0" viewBox="0 0 152 152"><g transform="matrix(1.15,0,0,1.15,-11.39885129928588,-11.385000228881822)"><path d="M53.1 141c4.6 0 5.9-1.8 5.9-4.1s0-7.3-.1-14.4c-23.9 5.1-29-11.4-29-11.4-3.9-9.7-9.6-12.4-9.6-12.4-7.8-5.2.6-5.1.6-5.1 8.6.6 13.2 8.7 13.2 8.7 7.7 13 20.1 9.2 25 7 .4-4.3 2.3-8.4 5.5-11.4-19.1-2.1-39.2-9.4-39.2-41.8-.1-8.4 3.1-16.6 8.9-22.7-1-2.1-3.9-10.7.7-22.4 0 0 7.2-2.3 23.7 8.7 14.1-3.8 28.9-3.8 43 0C118 8.8 125.3 11 125.3 11c4.6 11.6 1.7 20.2.9 22.4 5.8 6.1 8.9 14.3 8.8 22.7 0 32.5-20.1 39.6-39.3 41.7 3 2.5 5.8 7.7 5.8 15.6 0 11.4-.1 20.4-.1 23.1 0 2.2 1 4 5.9 4z" fill="currentColor" opacity="1"></path></g></svg>
+                        </a>
                     </div>
                 </nav>
             </header>
@@ -61,7 +62,7 @@ export default function HeaderNavbar() {
                         onClick={() => toggleMenu()}
                         className={cn(
                             "px-4 py-2 text-base rounded-lg font-medium cursor-pointer select-none",
-                            pathname === item.href ? "bg-secondary/40 text-foreground" : "hover:bg-secondary/40 text-foreground/70 hover:text-foreground duration-300"
+                            pathname === item.href ? "bg-[#2e2f33]/40 text-foreground" : "hover:bg-[#2e2f33]/40 text-foreground/70 hover:text-foreground duration-300"
                         )}
                         href={item.href}>{item.name}</Linker>)}</div>
                 </div>

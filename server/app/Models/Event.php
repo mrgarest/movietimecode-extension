@@ -28,22 +28,21 @@ class Event extends Model
      * Universal relationship based on event type.
      *
      * @param string $model Model class
-     * @param EventType $type Event type
      * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
      */
-    public function relation(string $model, EventType $event)
+    public function relation(string $model)
     {
-        return $this->belongsTo($model, 'value', 'id')->where('type', $event);
+        return $this->belongsTo($model, 'value', 'id');
     }
 
     public function movie()
     {
-        return $this->relation(Movie::class, EventType::CHECK_MOVIE);
+        return $this->relation(Movie::class);
     }
 
     public function timecode()
     {
-        return $this->relation(MovieTimecode::class, EventType::TIMECODE_USED);
+        return $this->relation(MovieTimecode::class);
     }
 
     public function scopeDeviceToken(Builder $query, string $deviceToken): Builder

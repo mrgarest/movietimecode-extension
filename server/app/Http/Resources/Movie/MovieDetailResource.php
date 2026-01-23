@@ -2,12 +2,13 @@
 
 namespace App\Http\Resources\Movie;
 
+use App\Clients\TmdbClient;
 use App\Http\Resources\SuccessResource;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
 
-class MovieCheckResource extends SuccessResource
+class MovieDetailResource extends SuccessResource
 {
     /**
      * Transform the resource into an array.
@@ -17,11 +18,14 @@ class MovieCheckResource extends SuccessResource
     public function toArray(Request $request): array
     {
         $movie = $this->resource['movie'];
+        $translation = $this->resource['translation'];
         $recommendation = $this->resource['recommendation'] ?? null;
 
         return [
             'id' => $movie->id,
             'tmdb_id' => $this->resource['tmdb_id'],
+            'title' => $translation->title ?? $movie->title,
+            'original_title' => $movie->title,
             'release' => $movie->release_date != null ? [
                 'hazard' => $movie->release_date->greaterThan(Carbon::now()->subYears(4)),
                 'release_date' => $movie->release_date->toDateString(),
@@ -35,7 +39,9 @@ class MovieCheckResource extends SuccessResource
             'recommendation' => $this->when($recommendation, [
                 'color' => $recommendation->color,
                 'message' => $recommendation->message
-            ])
+            ]),
+            'poster_url' => TmdbClient::getImageUrl('w500', $translation->poster_path ?? $movie->poster_path),
+            'backdrop_url' => TmdbClient::getImageUrl('w500',$translation->backdrop_path ?? $movie->backdrop_path)
         ];
     }
 

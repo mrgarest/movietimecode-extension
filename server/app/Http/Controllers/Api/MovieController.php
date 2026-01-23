@@ -5,7 +5,9 @@ namespace App\Http\Controllers\Api;
 use App\Enums\MovieCompanyRole;
 use App\Exceptions\ApiException;
 use App\Http\Controllers\Controller;
+use App\Http\Resources\Movie\MovieCardResource;
 use App\Http\Resources\Movie\MovieCheckResource;
+use App\Http\Resources\Movie\MovieDetailResource;
 use App\Http\Resources\Movie\MoviePreviewResource;
 use App\Http\Resources\Movie\MovieSearchResource;
 use App\Http\Resources\SuccessResource;
@@ -84,16 +86,84 @@ class MovieController extends Controller
 
         // Get companies for the movie
         $companies = $companyService->getForMovie($movie);
+        $productions = $companies->where('role', MovieCompanyRole::PRODUCTION)->values();
+        $distributors = $companies->where('role', MovieCompanyRole::DISTRIBUTOR)->values();
+
+        // Recommendation for the movie
+        $recommendation = $movieService->checkRecommendation(
+            movie: $movie,
+            productions: $productions,
+            distributors: $distributors,
+        );
 
         return new MovieCheckResource([
             'tmdb_id' => (int) $movieId,
             'movie' => $movie,
-            'productions' => $companies->where('role', MovieCompanyRole::PRODUCTION)->values(),
-            'distributors' => $companies->where('role', MovieCompanyRole::DISTRIBUTOR)->values(),
+            'productions' => $productions,
+            'distributors' => $distributors,
             'imdb' => [
                 'id' => $imdbService->getImdbId($movie),
                 'content_ratings' => $imdbService->getContentRatings($movie)
-            ]
+            ],
+            'recommendation' => $recommendation
+        ]);
+    }
+
+    /**
+     * Movie Details.
+     */
+    public function details(
+        int $movieId,
+        MovieService $movieService,
+        CompanyService $companyService,
+        ImdbService $imdbService
+    ) {
+        // Get the movie model
+        $movie = $movieService->getOrImport(
+            tmdbId: $movieId
+        );
+
+        if (!$movie) throw ApiException::notFound();
+
+        $translation = $movieService->getTranslation($movie);
+
+        // Get companies for the movie
+        $companies = $companyService->getForMovie($movie);
+        $productions = $companies->where('role', MovieCompanyRole::PRODUCTION)->values();
+        $distributors = $companies->where('role', MovieCompanyRole::DISTRIBUTOR)->values();
+
+        // Recommendation for the movie
+        $recommendation = $movieService->checkRecommendation(
+            movie: $movie,
+            productions: $productions,
+            distributors: $distributors,
+        );
+
+        return new MovieDetailResource([
+            'tmdb_id' => (int) $movieId,
+            'movie' => $movie,
+            'translation' => $translation,
+            'productions' => $productions,
+            'distributors' => $distributors,
+            'imdb' => [
+                'id' => $imdbService->getImdbId($movie),
+                'content_ratings' => $imdbService->getContentRatings($movie)
+            ],
+            'recommendation' => $recommendation
+        ]);
+    }
+
+    /**
+     * Movie latest.
+     */
+    public function latest(
+        MovieService $movieService,
+    ) {
+        $limit = 15;
+
+        return new SuccessResource([
+            'checked' => MovieCardResource::collection($movieService->latestChecked(limit: $limit)),
+            'timecodes' => MovieCardResource::collection($movieService->latestWithTimecodes(limit: $limit)['items'])
         ]);
     }
 

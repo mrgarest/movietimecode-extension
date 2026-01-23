@@ -2,6 +2,7 @@
 
 @theme {
     --font-sans: "Inter", sans-serif;
+    --font-roboto: "Roboto", sans-serif;
     --color-background: var(--background);
     --color-foreground: var(--foreground);
     --color-sidebar-ring: var(--sidebar-ring);
@@ -50,7 +51,7 @@
     --popover-foreground: hsl(0, 0%, 98%);
     --primary: hsl(0, 0%, 100%);
     --primary-foreground: hsl(0, 0%, 0%);
-    --secondary: hsl(220, 6%, 19%);
+    --secondary: hsl(0, 0%, 11.76%);
     --secondary-foreground: oklch(0.985 0 0);
     --muted: hsl(0, 0%, 56%);
     --muted-foreground: hsl(0, 0%, 63%);

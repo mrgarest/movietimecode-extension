@@ -6,14 +6,18 @@ use App\Cache\MovieCacheKey;
 use App\Clients\TmdbClient;
 use App\DTO\Movie\MoviePreviewData;
 use App\DTO\Movie\MovieSearchData;
+use App\DTO\Movie\MovieCheckRecommendationData;
+use App\Enums\EventType;
 use App\Enums\MovieCompanyRole;
 use App\Enums\MovieExternalId as EnumsMovieExternalId;
 use App\Enums\StorageId;
 use App\Helpers\MovieHelper;
 use App\Jobs\AddImagesToMovie;
+use App\Models\Event;
 use App\Models\Movie;
 use App\Models\MovieCompany;
 use App\Models\MovieExternalId;
+use App\Models\MovieTimecode;
 use App\Models\MovieTranslation;
 use App\Models\User;
 use App\Services\IMDB\ImdbService;
@@ -307,5 +311,159 @@ class MovieService
             originalTitle: $movie->title,
             posterPath: $translation->poster_path ?? $movie->poster_path,
         );
+    }
+
+    /**
+     * Returns text with a recommendation to watch the movie.
+     * 
+     * @param Movie $movie
+     * @param Collection $productions
+     * @param Collection $distributors
+     * @param string $langCode
+     * @return MovieCheckRecommendationData
+     */
+    public function checkRecommendation(Movie $movie, Collection $productions, Collection $distributors, string $langCode = 'uk'): MovieCheckRecommendationData
+    {
+        $isNew = $movie->release_date->gt(now()->subYears(4)); // молодший за 4 роки
+
+        // Get the maximum level of risk among both types of companies
+        $prodHazard = $productions->max('hazardLevel') ?? 0;
+        $distHazard = $distributors->max('hazardLevel') ?? 0;
+
+        // Логіка перевірки за пріоритетністю (від найгіршого до найкращого)
+
+        // Productions
+        if ($prodHazard > 0) return MovieCheckRecommendationData::fromLang(
+            color: 'red',
+            key: $isNew ? 'productionYear' : 'production',
+            langCode: $langCode
+        );
+
+        // Distributors
+        if ($distHazard > 0) return MovieCheckRecommendationData::fromLang(
+            color: $isNew ? 'red' : 'yellow',
+            key: $isNew ? 'distributorYear' : 'distributor',
+            langCode: $langCode
+        );
+
+        // Year
+        if ($isNew) return MovieCheckRecommendationData::fromLang(
+            color: 'yellow',
+            key: 'year',
+            langCode: $langCode
+        );
+
+        return MovieCheckRecommendationData::fromLang(
+            color: 'green',
+            key: 'safe',
+            langCode: $langCode
+        );
+    }
+
+    /**
+     * Get the latest movies that have been checked.
+     *
+     * @param string $langCode
+     * @param int $limit
+     * @return Collection
+     */
+    public function latestChecked(int $limit = 20, string $langCode = 'uk'): Collection
+    {
+        $data = Cache::remember(MovieCacheKey::latestChecked($langCode), Carbon::now()->addMinutes(5), function () use ($langCode, $limit) {
+            $events = Event::query()
+                ->type(EventType::CHECK_MOVIE)
+                ->with([
+                    'movie.translations' => function ($q) use ($langCode) {
+                        $q->whereIn('lang_code', [$langCode, 'en']);
+                    },
+                    'movie.externalIds' => function ($q) {
+                        $q->externalId(EnumsMovieExternalId::TMDB);
+                    }
+                ])
+                ->orderByDesc('created_at')
+                ->limit($limit + 2)
+                ->get();
+
+            return $events
+                ->map(fn($event) => $event->movie)
+                ->filter()
+                ->unique('id')
+                ->take($limit)
+                ->map(function (Movie $movie) use ($langCode) {
+                    $translation = $movie->translations->firstWhere('lang_code', $langCode)
+                        ?? $movie->translations->firstWhere('lang_code', 'en');
+
+                    $posterPath = !empty($translation->poster_path) ? $translation->poster_path : $movie->poster_path;
+
+                    return new MovieSearchData(
+                        id: $movie->id,
+                        tmdbId: $movie->externalIds->first()?->value,
+                        releaseYear: $movie->release_date->year,
+                        title: $translation->title ?? $movie->title,
+                        originalTitle: $movie->title,
+                        posterUrl: $posterPath ? TmdbClient::getImageUrl('w200', str_replace('/', '', $posterPath)) : null
+                    )->toArray();
+                })
+                ->values()
+                ->toArray();
+        });
+
+        return collect($data)->map(fn(array $item) => MovieSearchData::fromArray($item));
+    }
+
+    /**
+     * Get a list of movies with added timecodes
+     *
+     * @param int $page
+     * @param int $limit
+     * @param string $langCode
+     * @return array
+     */
+    public function latestWithTimecodes(int $page = 1, int $limit = 20, string $langCode = 'uk'): array
+    {
+        $data = Cache::remember(MovieCacheKey::latestWithTimecodes($page, $limit, $langCode), Carbon::now()->addMinutes(2), function () use ($langCode, $page, $limit) {
+            $paginator = Movie::query()
+                ->whereHas('movieTimecodes')
+                ->with([
+                    'translations' => fn($q) => $q->whereIn('lang_code', [$langCode, 'en']),
+                    'externalIds' => fn($q) => $q->externalId(EnumsMovieExternalId::TMDB),
+                    'movieTimecodes' => fn($q) => $q->orderByDesc('created_at')
+                ])
+                ->orderByDesc(
+                    MovieTimecode::select('created_at')
+                        ->whereColumn('movie_id', 'movies.id')
+                        ->orderByDesc('created_at')
+                        ->limit(1)
+                )
+
+                ->paginate($limit, ['*'], 'page', $page);
+
+            return [
+                'total' => $paginator->total(),
+                'per_page' => $paginator->perPage(),
+                'current_page' => $paginator->currentPage(),
+                'items' => $paginator->map(function (Movie $movie) use ($langCode) {
+                    $translation = $movie->translations->firstWhere('lang_code', $langCode)
+                        ?? $movie->translations->firstWhere('lang_code', 'en');
+
+                    $posterPath = !empty($translation->poster_path) ? $translation->poster_path : $movie->poster_path;
+
+                    return new MovieSearchData(
+                        tmdbId: $movie->externalIds->first()?->value,
+                        releaseYear: $movie->release_date->year,
+                        title: $translation->title ?? $movie->title,
+                        originalTitle: $movie->original_title ?? $movie->title,
+                        posterUrl: $posterPath ? TmdbClient::getImageUrl('w200', str_replace('/', '', $posterPath)) : null,
+                    )->toArray();
+                })
+            ];
+        });
+
+        return [
+            'total' => $data['total'],
+            'per_page' => $data['per_page'],
+            'current_page' => $data['current_page'],
+            'items' => collect($data['items'])->map(fn(array $item) => MovieSearchData::fromArray($item))
+        ];
     }
 }

@@ -50,6 +50,10 @@ Route::prefix('dashboard')
         Route::get('/timecodes', 'timecodes');
     });
 
+Route::prefix('movies')->controller(MovieController::class)->group(function () {
+    Route::get('/latest', 'latest');
+});
+
 Route::prefix('v2')->group(function () {
     Route::post('/auth/extension', [AuthController::class, 'extension']);
 
@@ -77,6 +81,7 @@ Route::prefix('v2')->group(function () {
 
         Route::prefix('{movieId}')->group(function () {
             Route::controller(MovieController::class)->group(function () {
+                Route::get('/', 'details');
                 Route::get('/check', 'check');
             });
 

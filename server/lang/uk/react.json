@@ -9,7 +9,7 @@
     "logout": "Вийти",
     "close": "Закрити",
     "homePage": {
-        "title": "Movie Timecode — фільми на Twitch без небажаних сцен",
+        "title": "Movie Timecode — перевірка фільмів для Twitch",
         "description": "Це зручне браузерне розширення, яке автоматично приховує небажані сцени під час трансляції фільмів на Twitch"
     },
     "auth": {
@@ -24,7 +24,10 @@
         "completedSuccessfully": "Авторизація успішно виконана. Ви можете закрити цю сторінку."
     },
     "movies": "Фільми",
+    "moviesCheck": "Перевірка фільмів",
+    "enterMovieTitleToCheckIt": "Введіть назву фільму, щоб перевірити його",
     "timecodes": "Таймкоди",
+    "searchForMovie": "Пошук фільму...",
     "users": "Користувачі",
     "author": "Автор",
     "created": "Створено",
@@ -38,5 +41,34 @@
     "extensionNotAvailableDescription": "Не вдалося встановити звʼязок із розширенням для виконання дії. Можливо, розширення не встановлене в браузері.",
     "alertDelete": "Ця дія призведе до остаточного видалення цього елемнту.",
     "latest": "Останні",
-    "usage": "Використані"
+    "usage": "Використані",
+    "production": "Кінокомпанія",
+    "distributors": "Дистриб'ютор",
+    "releaseDate": "Дата виходу",
+    "sexNudity": "Секс і оголеність",
+    "violence": "Насильство",
+    "profanity": "Ненормативна лексика",
+    "alcoholDrugsSmoking": "Алкоголь, наркотики та куріння",
+    "none": "Немає",
+    "mild": "Незначний",
+    "moderate": "Середній",
+    "severe": "Надмірний",
+    "imdbContentRating": "Рейтинг контенту IMDB",
+    "movieDuration": "Тривалість фільму",
+    "recommendation": "Рекомендація",
+    "selectAuthor": "Оберіть автора...",
+    "noOneHasAddedTimecodes": "Ніхто ще не додав таймкоди для цього фільму. Ви може бути першим, хто додасть їх за допомогою розширення.",
+    "authorNotedTimecodesNotRequired": "Автор зазначив, що для цього фільму таймкоди не потрібні.",
+    "twitchContentClassification": "Класифікація контенту для Twitch",
+    "twitchContentClassificationOptions": {
+        "politicsAndSensitiveSocialIssues": "Політика та чутливі соціальні теми",
+        "drugsIntoxicationTobacco": "Наркотики, алкогольне сп'яніння або надмірне вживання тютюну",
+        "gambling": "Азартні ігри",
+        "profanityVulgarity": "Надмірна нецензурна лексика або вульгарність",
+        "sexualThemes": "Сексуальні теми",
+        "violentGraphic": "Сцени насильства та жорстокості"
+    },
+    "latestCheckedMovies": "Останні перевірені фільми",
+    "latestAddedTimecodes": "Останні додані таймкоди",
+    "moviesNotFound": "Фільми не знайдено"
 }
