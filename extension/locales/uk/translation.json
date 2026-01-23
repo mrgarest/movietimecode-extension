@@ -193,5 +193,6 @@
     "settingsImportedError": "Не вдалося імпортувати налаштування.",
     "invalidFileFormat": "Неправильний формат файлу",
     "author": "Автор",
-    "segments": "Сегменти"
+    "segments": "Сегменти",
+    "imdbContentRating": "Рейтинг контенту IMDB"
 }

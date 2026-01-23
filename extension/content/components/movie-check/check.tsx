@@ -75,7 +75,7 @@ export default function Check({ movie, onLoading, onError }: RootProps) {
                     <MovieCompany text={i18n.t("distributors")} companies={movieCheck.distributors} />
                 </div>
                 {movieCheck.imdb?.content_ratings && <div className="mt-border-t">
-                    <div className="mt-info-title">Рейтинг контенту IMDB</div>
+                    <div className="mt-info-title">{i18n.t('imdbContentRating')}</div>
                     <div className="mt-info-grid">
                         <ContentRating
                             id={movieCheck.imdb.id}
