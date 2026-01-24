@@ -133,8 +133,7 @@ Route::post('/test-imdb', function (Request $request) {
     return [
         'status' => $response->status(),
         'is_blocked' => $response->status() === 403,
-        // Показуємо перші 500 символів, щоб побачити чи там HTML, чи помилка WAF
-        'preview' => mb_substr($response->body(), 0, 500),
+        'preview' => $response->body(),
         'headers_sent' => [
             'User-Agent' => $userAgent,
             'Cookie' => $cookieString
