@@ -110,33 +110,3 @@ Route::prefix('v2')->group(function () {
 
     Route::post('/events', [EventController::class, 'store']);
 });
-
-
-//test
-Route::post('/test-imdb', function (Request $request) {
-    $userAgent = $request->input('userAgent');
-    $cookieString = $request->input('cookieString');
-
-    if (!$userAgent || !$cookieString) {
-        return response()->json(['error' => 'Missing parameters'], 400);
-    }
-
-    /** @var Response $response */
-    $response = Http::withHeaders([
-        'User-Agent' => $userAgent,
-        'Cookie' => $cookieString,
-        'Accept' => 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8',
-        'Accept-Language' => 'en-US,en;q=0.5',
-        'Upgrade-Insecure-Requests' => '1',
-    ])->get('https://www.imdb.com/title/tt1298650/companycredits/');
-
-    return [
-        'status' => $response->status(),
-        'is_blocked' => $response->status() === 403,
-        'preview' => $response->body(),
-        'headers_sent' => [
-            'User-Agent' => $userAgent,
-            'Cookie' => $cookieString
-        ]
-    ];
-});

@@ -42,7 +42,7 @@ export default function MovieSearch() {
                 <X onClick={() => setQuery('')} className="absolute right-1 top-1/2 -translate-y-1/2 size-10 p-3 text-muted-foreground z-2 cursor-pointer" /> : <Search className="absolute right-4 top-1/2 -translate-y-1/2 size-4 text-muted-foreground z-2" />}
             <Input
                 className={cn(
-                    "pr-11 h-12 w-full duration-300 z-0 relative max-sm:text-sm",
+                    "pr-11 h-12 w-full duration-300 z-0 relative",
                     showResults ? "rounded-t-2xl rounded-b-none" : "rounded-2xl"
                 )}
                 type="text"
