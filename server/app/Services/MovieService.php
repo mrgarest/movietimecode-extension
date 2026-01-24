@@ -440,13 +440,13 @@ class MovieService
 
                     $posterPath = !empty($translation->poster_path) ? $translation->poster_path : $movie->poster_path;
 
-                    return new MovieSearchData(
+                    return (new MovieSearchData(
                         tmdbId: $movie->externalIds->first()?->value,
                         releaseYear: $movie->release_date->year,
                         title: $translation->title ?? $movie->title,
                         originalTitle: $movie->original_title ?? $movie->title,
                         posterUrl: $posterPath ? TmdbClient::getImageUrl('w200', str_replace('/', '', $posterPath)) : null,
-                    )->toArray();
+                    ))->toArray();
                 })->all()
             ];
         });
