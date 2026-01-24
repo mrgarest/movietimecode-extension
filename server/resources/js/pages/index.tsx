@@ -47,6 +47,7 @@ export default function HomePage() {
                 title={t('latestCheckedMovies')}
                 movies={data?.checked ?? []} />
             <MovieLatestCarousel
+                seeMoreUrl="/movies/timecodes"
                 isLoading={isLoading}
                 title={t('latestAddedTimecodes')}
                 movies={data?.timecodes ?? []} />
