@@ -24,6 +24,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->statefulApi();
         $middleware->trustProxies(at: '*');
         $middleware->encryptCookies(except: ['uat']);
+        $middleware->throttleApi('api');
         $middleware->alias([
             'not_deactivated' => CheckDeactivated::class,
             'scopes' => CheckScopes::class,
