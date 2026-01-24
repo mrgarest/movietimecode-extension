@@ -70,15 +70,17 @@ class ImdbClient
     public function get(string $url)
     {
         $cookie = Cache::get(ImdbCacheKey::cookies());
-        if (!$cookie) return null;
 
-        /** @var Response $response */
-        $response = Http::withHeaders([
+        $header = [
             'User-Agent' => $this->userAgent,
-            'Cookie' => $cookie,
             'Accept' => 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8',
             'Accept-Language' => 'en-US,en;q=0.5',
-        ])->get(self::API_BASE . $url);
+        ];
+
+        if($cookie) $header[] = $cookie;
+
+        /** @var Response $response */
+        $response = Http::withHeaders($header)->get(self::API_BASE . $url);
 
         return $response->successful() ? $response->body() : null;
     }
