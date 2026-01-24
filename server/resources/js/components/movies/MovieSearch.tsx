@@ -60,7 +60,7 @@ export default function MovieSearch() {
                         transition={{ duration: 0.3, ease: "easeInOut" }}
                         className="absolute left-0 right-0 w-full bg-secondary border border-border rounded-b-2xl overflow-hidden z-20 shadow-xl">
                         <div>
-                            {isActuallyLoading ? <Spinner className="mx-auto" /> : <ScrollArea className="h-74">{movies.map((item, index) => <Link
+                            {isActuallyLoading ? <Spinner className="mx-auto my-4" /> : <ScrollArea className="h-74">{movies.map((item, index) => <Link
                                 key={index}
                                 to={`/movies/${item.tmdb_id}`}
                                 state={{ fromSearch: true }}

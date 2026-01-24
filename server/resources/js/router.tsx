@@ -9,6 +9,7 @@ import DashboardPage from "./pages/dashboard";
 import LogoutPage from "./pages/logout";
 import TimecodePage from "./pages/dashboard/timecode";
 import MovieDetailPage from "./pages/movies/detail";
+import MovieWithTimecodesPage from "./pages/movies/with-timecodes";
 
 const router = createBrowserRouter([
     {
@@ -19,6 +20,7 @@ const router = createBrowserRouter([
             {
                 path: "movies",
                 children: [
+                    { path: "timecodes", element: <MovieWithTimecodesPage /> },
                     { path: ":id", element: <MovieDetailPage /> }
                 ]
             },

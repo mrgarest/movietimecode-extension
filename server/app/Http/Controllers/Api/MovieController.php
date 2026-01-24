@@ -156,14 +156,31 @@ class MovieController extends Controller
     /**
      * Movie latest.
      */
-    public function latest(
-        MovieService $movieService,
-    ) {
+    public function latest(MovieService $movieService)
+    {
         $limit = 15;
 
         return new SuccessResource([
             'checked' => MovieCardResource::collection($movieService->latestChecked(limit: $limit)),
             'timecodes' => MovieCardResource::collection($movieService->latestWithTimecodes(limit: $limit)['items'])
+        ]);
+    }
+
+    /**
+     * List of movies with timecodes.
+     */
+    public function withTimecodes(Request $request, MovieService $movieService)
+    {
+        $validated = $request->validate([
+            'page' => 'nullable|integer'
+        ]);
+
+        $data = $movieService->latestWithTimecodes(page: $validated['page'] ?? 1);
+
+        return new SuccessResource([
+            'current_page' => $data['current_page'],
+            'last_page' => $data['last_page'],
+            'items' => MovieCardResource::collection($data['items']),
         ]);
     }
 

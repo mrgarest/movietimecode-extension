@@ -6,6 +6,11 @@
     <priority>1.0</priority>
             </url>
     <url>
+    <loc>https://movietimecode.mrgarest.com/movies/timecodes</loc>
+    <changefreq>daily</changefreq>
+    <priority>0.8</priority>
+            </url>
+    <url>
     <loc>https://movietimecode.mrgarest.com/movies/546121</loc>
     <lastmod>2026-01-18T22:31:06+00:00</lastmod>
     <changefreq>monthly</changefreq>

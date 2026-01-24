@@ -58,7 +58,6 @@ export interface MovieSearchTimecodesResponse extends ServerResponse {
 }
 
 export interface MovieLatestResponse extends ServerResponse {
-  id: number;
   checked: MovieCard[] | null;
   timecodes: MovieCard[] | null;
 }
@@ -68,4 +67,10 @@ export interface MovieCard {
   release_year: number | null;
   title: string;
   poster_url: string | null;
+}
+
+export interface MovieListResponse extends ServerResponse {
+  current_page: number;
+  last_page: number;
+  items: MovieCard[] | null;
 }

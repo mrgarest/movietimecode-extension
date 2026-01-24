@@ -424,25 +424,19 @@ class MovieService
         $data = Cache::remember(MovieCacheKey::latestWithTimecodes($page, $limit, $langCode), Carbon::now()->addMinutes(2), function () use ($langCode, $page, $limit) {
             $paginator = Movie::query()
                 ->whereHas('timecodes')
+                ->withMax('timecodes as latest_timecode_at', 'created_at')
+                ->orderByDesc('latest_timecode_at')
                 ->with([
                     'translations' => fn($q) => $q->whereIn('lang_code', [$langCode, 'en']),
                     'externalIds' => fn($q) => $q->externalId(EnumsMovieExternalId::TMDB),
-                    'timecodes' => fn($q) => $q->orderByDesc('created_at')
                 ])
-                ->orderByDesc(
-                    MovieTimecode::select('created_at')
-                        ->whereColumn('movie_id', 'movies.id')
-                        ->orderByDesc('created_at')
-                        ->limit(1)
-                )
-
                 ->paginate($limit, ['*'], 'page', $page);
 
             return [
                 'total' => $paginator->total(),
-                'per_page' => $paginator->perPage(),
                 'current_page' => $paginator->currentPage(),
-                'items' => $paginator->map(function (Movie $movie) use ($langCode) {
+                'last_page' => $paginator->lastPage(),
+                'items' => $paginator->getCollection()->map(function (Movie $movie) use ($langCode) {
                     $translation = $movie->translations->firstWhere('lang_code', $langCode)
                         ?? $movie->translations->firstWhere('lang_code', 'en');
 
@@ -455,14 +449,14 @@ class MovieService
                         originalTitle: $movie->original_title ?? $movie->title,
                         posterUrl: $posterPath ? TmdbClient::getImageUrl('w200', str_replace('/', '', $posterPath)) : null,
                     )->toArray();
-                })
+                })->all()
             ];
         });
 
         return [
             'total' => $data['total'],
-            'per_page' => $data['per_page'],
             'current_page' => $data['current_page'],
+            'last_page' => $data['last_page'],
             'items' => collect($data['items'])->map(fn(array $item) => MovieSearchData::fromArray($item))
         ];
     }

@@ -22,6 +22,7 @@ export default function HeaderNavbar() {
                 href: "https://chromewebstore.google.com/detail/oicfghfgplgplodmidellkbfoachacjb?utm_source=movietimecod",
                 target: "_blank"
             },
+            { name: t("timecodes"), href: "/movies/timecodes" },
             {
                 name: "Telegram",
                 href: "https://t.me/+B-6MNbF-t6cyZDVi",

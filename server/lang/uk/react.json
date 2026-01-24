@@ -70,5 +70,10 @@
     },
     "latestCheckedMovies": "Останні перевірені фільми",
     "latestAddedTimecodes": "Останні додані таймкоди",
-    "moviesNotFound": "Фільми не знайдено"
+    "moviesNotFound": "Фільми не знайдено",
+    "seeMore": "Переглянути більше",
+    "moviesWithTimecodesPage": {
+        "title": "Перевірені фільми з таймкодами",
+        "description": "Список перевірених фільмів з таймкодами для перегляду на Twitch"
+    }
 }

@@ -37,6 +37,10 @@ class GenerateSitemap extends Command
             ->setPriority(1.0)
             ->setChangeFrequency(Url::CHANGE_FREQUENCY_DAILY));
 
+        $sitemap->add(Url::create('/movies/timecodes')
+            ->setPriority(0.8)
+            ->setChangeFrequency(Url::CHANGE_FREQUENCY_DAILY));
+
         // Movies with timecodes
         MovieExternalId::query()
             ->join('movies', 'movie_external_ids.movie_id', '=', 'movies.id')
