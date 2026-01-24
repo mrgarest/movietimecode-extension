@@ -59,10 +59,10 @@ export default function MovieDetailPage() {
                             src={movie.backdrop_url || "/images/not_found_poster.webp"}
                             alt={movie.title || "poster"}
                         />
-                        <div className="absolute top-0 left-0 right-0 bottom-0 bg-black/50 z-1" />
+                        <div className="absolute top-0 left-0 right-0 bottom-0 bg-black/60 z-1" />
                         <div className="absolute left-0 right-0 bottom-0 p-4 z-2">
-                            <h1 className="text-2xl text-white font-bold">{movie.title ? movie.title : movie.original_title}</h1>
-                            {movie.title != null && <h2 className="text-sm text-white/70 font-bold">{movie.original_title}</h2>}
+                            <h1 className="text-lg sm:text-2xl text-white font-bold leading-snug">{movie.title ? movie.title : movie.original_title}</h1>
+                            {movie.title != null && <h2 className="text-xs sm:text-sm text-white/70 font-bold leading-snug">{movie.original_title}</h2>}
                         </div>
                     </div>
                     <div className="space-y-4">
