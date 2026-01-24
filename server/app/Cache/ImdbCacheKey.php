@@ -15,4 +15,9 @@ class ImdbCacheKey
     {
         return  self::ROT . 'contentratings.' . $id;
     }
+
+    public static function cookies(): string
+    {
+        return  self::ROT . 'cookies';
+    }
 }
