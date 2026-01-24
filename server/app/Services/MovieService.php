@@ -95,7 +95,7 @@ class MovieService
                 })
                 ->with(['externalIds' => fn($q) => $q->externalId(EnumsMovieExternalId::TMDB)])
                 ->when($needsTimecodeId && $user, function ($q) use ($user) {
-                    $q->with(['movieTimecodes' => fn($q) => $q->select(['id', 'movie_id', 'user_id'])->userId($user->id)]);
+                    $q->with(['timecodes' => fn($q) => $q->select(['id', 'movie_id', 'user_id'])->userId($user->id)]);
                 })
                 ->get()
                 ->keyBy(fn($m) => $m->externalIds->first()?->value);
@@ -107,8 +107,8 @@ class MovieService
                         $item->id = $movie->id;
                     }
 
-                    if ($needsTimecodeId && $user && $movie->relationLoaded('movieTimecodes')) {
-                        $item->timecodeId = $movie->movieTimecodes->first()?->id;
+                    if ($needsTimecodeId && $user && $movie->relationLoaded('timecodes')) {
+                        $item->timecodeId = $movie->timecodes->first()?->id;
                     }
                 }
             });
@@ -289,7 +289,7 @@ class MovieService
     {
         $movie = Cache::remember(MovieCacheKey::preview($title, $year), Carbon::now()->addMinutes(5), function () use ($title, $year) {
             $movie = Movie::findByTitlesYear(MovieHelper::getTitles($title)->all(), $year)
-                ->whereHas('movieTimecodes', function ($q) {
+                ->whereHas('timecodes', function ($q) {
                     $q->whereHas('user', fn($u) => $u->whereNull('deleted_at'));
                 })
                 ->first();
@@ -423,11 +423,11 @@ class MovieService
     {
         $data = Cache::remember(MovieCacheKey::latestWithTimecodes($page, $limit, $langCode), Carbon::now()->addMinutes(2), function () use ($langCode, $page, $limit) {
             $paginator = Movie::query()
-                ->whereHas('movieTimecodes')
+                ->whereHas('timecodes')
                 ->with([
                     'translations' => fn($q) => $q->whereIn('lang_code', [$langCode, 'en']),
                     'externalIds' => fn($q) => $q->externalId(EnumsMovieExternalId::TMDB),
-                    'movieTimecodes' => fn($q) => $q->orderByDesc('created_at')
+                    'timecodes' => fn($q) => $q->orderByDesc('created_at')
                 ])
                 ->orderByDesc(
                     MovieTimecode::select('created_at')

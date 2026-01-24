@@ -63,12 +63,12 @@ class Movie extends Model
         return $this->hasMany(MovieCompany::class);
     }
     
-    public function movieTimecodes()
+    public function timecodes()
     {
         return $this->hasMany(MovieTimecode::class);
     }
 
-    public function movieTimecodeSegments()
+    public function timecodeSegments()
     {
         return $this->hasMany(MovieTimecodeSegment::class);
     }

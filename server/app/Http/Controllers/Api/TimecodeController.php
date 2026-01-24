@@ -417,7 +417,7 @@ class TimecodeController extends Controller
                 'translations' => function ($query) use ($select, $langCode) {
                     $query->select(array_merge(['movie_id', 'lang_code'], $select))->where('lang_code', $langCode);
                 },
-                'movieTimecodes' => function ($query) {
+                'timecodes' => function ($query) {
                     $query->whereHas('user', function ($q) {
                         $q->whereNull('deleted_at');
                     })->withCount('segments')->with([
@@ -429,14 +429,14 @@ class TimecodeController extends Controller
             ])
             ->first();
 
-        if (!$movie || ($movie && $movie->movieTimecodes->isEmpty())) return EchoApi::httpError(Response::HTTP_NOT_FOUND);
+        if (!$movie || ($movie && $movie->timecodes->isEmpty())) return EchoApi::httpError(Response::HTTP_NOT_FOUND);
 
         $translation = $movie->translations[0] ?? null;
 
         $timecodes = null;
-        if (!$movie->movieTimecodes->isEmpty()) {
+        if (!$movie->timecodes->isEmpty()) {
             $timecodes = [];
-            foreach ($movie->movieTimecodes as $movieTimecode) {
+            foreach ($movie->timecodes as $movieTimecode) {
                 $user = $movieTimecode->user;
                 $timecodes[] = [
                     'id' => $movieTimecode->id,
