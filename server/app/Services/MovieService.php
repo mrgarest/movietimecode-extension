@@ -18,7 +18,6 @@ use App\Models\Event;
 use App\Models\Movie;
 use App\Models\MovieCompany;
 use App\Models\MovieExternalId;
-use App\Models\MovieTimecode;
 use App\Models\MovieTranslation;
 use App\Models\User;
 use App\Services\IMDB\ImdbService;
@@ -351,20 +350,31 @@ class MovieService
      */
     public function checkRecommendation(Movie $movie, Collection $productions, Collection $distributors, string $langCode = 'uk'): MovieCheckRecommendationData
     {
-        $isNew = $movie->release_date->gt(now()->subYears(4)); // молодший за 4 роки
+        // Checking the age of a movie
+        $isNew = $movie->release_date->gt(Carbon::now()->subYears(4));
 
-        // Get the maximum level of risk among both types of companies
+        // Productions hazard
+        if ($productions->isEmpty()) return MovieCheckRecommendationData::fromLang(
+            color: 'red',
+            key: $isNew ? 'noProductionYear' : 'noProduction',
+            langCode: $langCode
+        );
+
         $prodHazard = $productions->max('hazardLevel') ?? 0;
-        $distHazard = $distributors->max('hazardLevel') ?? 0;
-
-        // Productions
         if ($prodHazard > 0) return MovieCheckRecommendationData::fromLang(
             color: 'red',
             key: $isNew ? 'productionYear' : 'production',
             langCode: $langCode
         );
 
-        // Distributors
+        // Distributors hazard
+        if ($distributors->isEmpty()) return MovieCheckRecommendationData::fromLang(
+            color: $isNew ? 'red' : 'yellow',
+            key: $isNew ? 'noDistributorYear' : 'noDistributor',
+            langCode: $langCode
+        );
+
+        $distHazard = $distributors->max('hazardLevel') ?? 0;
         if ($distHazard > 0) return MovieCheckRecommendationData::fromLang(
             color: $isNew ? 'red' : 'yellow',
             key: $isNew ? 'distributorYear' : 'distributor',

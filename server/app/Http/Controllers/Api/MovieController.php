@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Enums\MovieCompanyRole;
+use App\Enums\RefreshMovieDataType;
 use App\Exceptions\ApiException;
 use App\Helpers\RequestManager;
 use App\Http\Controllers\Controller;
@@ -16,6 +17,7 @@ use App\Models\Movie;
 use App\Services\CompanyService;
 use App\Services\IMDB\ImdbService;
 use App\Services\MovieService;
+use App\Services\RefreshMovieDataService;
 use Illuminate\Http\Request;
 
 class MovieController extends Controller
@@ -92,12 +94,21 @@ class MovieController extends Controller
         $productions = $companies->where('role', MovieCompanyRole::PRODUCTION)->values();
         $distributors = $companies->where('role', MovieCompanyRole::DISTRIBUTOR)->values();
 
+        // Get content ratings
+        $contentRatings = $imdbService->getContentRatings($movie);
+
         // Recommendation for the movie
         $recommendation = $movieService->checkRecommendation(
             movie: $movie,
             productions: $productions,
             distributors: $distributors,
         );
+
+        // Starts updating data if it is missing
+        $refreshMovieDataTypes = [];
+        if ($contentRatings->isEmpty()) $refreshMovieDataTypes[] = RefreshMovieDataType::IMDB_CONTENT_RATINGS;
+        if ($distributors->isEmpty() || !$movie->rating_imdb) $refreshMovieDataTypes[] = RefreshMovieDataType::IMDB_INFO;
+        if (!empty($refreshMovieDataTypes)) RefreshMovieDataService::dispatch($movie->id, $refreshMovieDataTypes);
 
         return new MovieCheckResource([
             'tmdb_id' => (int) $movieId,
@@ -106,7 +117,7 @@ class MovieController extends Controller
             'distributors' => $distributors,
             'imdb' => [
                 'id' => $imdbService->getImdbId($movie),
-                'content_ratings' => $imdbService->getContentRatings($movie)
+                'content_ratings' => $contentRatings
             ],
             'recommendation' => $recommendation
         ]);
@@ -137,12 +148,21 @@ class MovieController extends Controller
         $productions = $companies->where('role', MovieCompanyRole::PRODUCTION)->values();
         $distributors = $companies->where('role', MovieCompanyRole::DISTRIBUTOR)->values();
 
+        // Get content ratings
+        $contentRatings = $imdbService->getContentRatings($movie);
+
         // Recommendation for the movie
         $recommendation = $movieService->checkRecommendation(
             movie: $movie,
             productions: $productions,
             distributors: $distributors,
         );
+
+        // Starts updating data if it is missing
+        $refreshMovieDataTypes = [];
+        if ($contentRatings->isEmpty()) $refreshMovieDataTypes[] = RefreshMovieDataType::IMDB_CONTENT_RATINGS;
+        if ($distributors->isEmpty() || !$movie->rating_imdb) $refreshMovieDataTypes[] = RefreshMovieDataType::IMDB_INFO;
+        if (!empty($refreshMovieDataTypes)) RefreshMovieDataService::dispatch($movie->id, $refreshMovieDataTypes);
 
         return new MovieDetailResource([
             'tmdb_id' => (int) $movieId,
@@ -152,7 +172,7 @@ class MovieController extends Controller
             'distributors' => $distributors,
             'imdb' => [
                 'id' => $imdbService->getImdbId($movie),
-                'content_ratings' => $imdbService->getContentRatings($movie)
+                'content_ratings' => $contentRatings
             ],
             'recommendation' => $recommendation
         ]);

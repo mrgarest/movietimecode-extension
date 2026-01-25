@@ -20,7 +20,6 @@ class CompanyService
      * @param string|null $countryCode.
      * @return Company
      */
-
     public function getOrCreateCompany(string $name, ?string $countryCode = null): Company
     {
         $name = trim($name);
