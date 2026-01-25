@@ -145,13 +145,26 @@ class MovieService
 
         // If an IP address is available, a strict limit is applied to the number of requests to the external API
         if ($ip) {
-            $key = 'importFromTmdb:' . $ip;
+            $rateKey = 'importFromTmdb:rate:' . $ip;
+            $banKey  = 'importFromTmdb:ban:' . $ip;
 
-            if (RateLimiter::tooManyAttempts($key, 20)) {
+            // Ban check
+            if (RateLimiter::tooManyAttempts($banKey, 1)) {
                 throw ApiException::tooManyRequests();
             }
 
-            RateLimiter::hit($key, 300);
+            // Checking the limit of 20 attempts in 60 seconds
+            if (RateLimiter::tooManyAttempts($rateKey, 20)) {
+                // Activate the ban for 5 minutes
+                RateLimiter::hit($banKey, 300);
+
+                // Clearing the attempt counter
+                RateLimiter::clear($rateKey);
+
+                throw ApiException::tooManyRequests();
+            }
+
+            RateLimiter::hit($rateKey, 60);
         }
 
         return app()->call([$this, 'importFromTmdb'], ['tmdbId' => $tmdbId]);
