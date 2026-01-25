@@ -102,7 +102,7 @@ class ApiException extends Exception
     }
 
     /**
-     * Not Found - 404
+     * Too many requests - 429
      */
     public static function tooManyRequests(?array $details = null): self
     {
