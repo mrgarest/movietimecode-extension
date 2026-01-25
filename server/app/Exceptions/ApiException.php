@@ -102,6 +102,19 @@ class ApiException extends Exception
     }
 
     /**
+     * Not Found - 404
+     */
+    public static function tooManyRequests(?array $details = null): self
+    {
+        return new static(
+            code: 'TOO_MANY_REQUESTS',
+            status: Response::HTTP_TOO_MANY_REQUESTS,
+            message: 'You have made too many requests and have been temporarily banned',
+            details: $details
+        );
+    }
+
+    /**
      * Request source is not authorized to access this resource - 401
      */
     public static function unauthorizedRequestSource(?array $details = null): self

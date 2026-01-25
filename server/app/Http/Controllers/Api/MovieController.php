@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Enums\MovieCompanyRole;
 use App\Exceptions\ApiException;
+use App\Helpers\RequestManager;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\Movie\MovieCardResource;
 use App\Http\Resources\Movie\MovieCheckResource;
@@ -72,6 +73,7 @@ class MovieController extends Controller
      * Movie check.
      */
     public function check(
+        Request $request,
         int $movieId,
         MovieService $movieService,
         CompanyService $companyService,
@@ -79,7 +81,8 @@ class MovieController extends Controller
     ) {
         // Get the movie model
         $movie = $movieService->getOrImport(
-            tmdbId: $movieId
+            tmdbId: $movieId,
+            ip: RequestManager::getIp($request)
         );
 
         if (!$movie) throw ApiException::notFound();
@@ -113,6 +116,7 @@ class MovieController extends Controller
      * Movie Details.
      */
     public function details(
+        Request $request,
         int $movieId,
         MovieService $movieService,
         CompanyService $companyService,
@@ -120,7 +124,8 @@ class MovieController extends Controller
     ) {
         // Get the movie model
         $movie = $movieService->getOrImport(
-            tmdbId: $movieId
+            tmdbId: $movieId,
+            ip: RequestManager::getIp($request)
         );
 
         if (!$movie) throw ApiException::notFound();
@@ -202,7 +207,8 @@ class MovieController extends Controller
 
         // Get the movie model
         $movie = isset($validated['id']) ? Movie::find($validated['id']) : $movieService->getOrImport(
-            tmdbId: $validated['tmdb_id']
+            tmdbId: $validated['tmdb_id'],
+            ip: RequestManager::getIp($request)
         );
 
         if (!$movie) throw ApiException::notFound();

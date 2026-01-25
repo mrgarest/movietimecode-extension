@@ -11,6 +11,7 @@ use App\Enums\EventType;
 use App\Enums\MovieCompanyRole;
 use App\Enums\MovieExternalId as EnumsMovieExternalId;
 use App\Enums\StorageId;
+use App\Exceptions\ApiException;
 use App\Helpers\MovieHelper;
 use App\Jobs\AddImagesToMovie;
 use App\Models\Event;
@@ -26,6 +27,7 @@ use Carbon\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\RateLimiter;
 
 class MovieService
 {
@@ -121,10 +123,11 @@ class MovieService
      * Get information about the movie from the database. If the movie is not in the database, import it.
      *
      * @param int $tmdbId
+     * @param string|null $ip
      * 
      * @return Movie|null
      */
-    public function getOrImport(int $tmdbId): ?Movie
+    public function getOrImport(int $tmdbId, ?string $ip = null): ?Movie
     {
         $cacheKey = MovieCacheKey::externalTmdbId($tmdbId);
 
@@ -138,6 +141,17 @@ class MovieService
         if ($movie) {
             Cache::put($cacheKey, $movie->toCache(), Carbon::now()->addMinutes(5));
             return $movie;
+        }
+
+        // If an IP address is available, a strict limit is applied to the number of requests to the external API
+        if ($ip) {
+            $key = 'importFromTmdb:' . $ip;
+
+            if (RateLimiter::tooManyAttempts($key, 20)) {
+                throw ApiException::tooManyRequests();
+            }
+
+            RateLimiter::hit($key, 300);
         }
 
         return app()->call([$this, 'importFromTmdb'], ['tmdbId' => $tmdbId]);

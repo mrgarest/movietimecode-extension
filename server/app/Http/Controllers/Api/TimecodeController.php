@@ -226,7 +226,7 @@ class TimecodeController extends Controller
         $data = $validator->getData();
 
         // Get the movie model
-        $movie = isset($data['tmdb_id']) ? $movieService->getOrImport($data['tmdb_id']) : Movie::find($data['movie_id']);
+        $movie = isset($data['tmdb_id']) ? $movieService->getOrImport($data['tmdb_id'], RequestManager::getIp($request)) : Movie::find($data['movie_id']);
 
         if (!$movie) return EchoApi::httpError(Response::HTTP_NOT_FOUND);
 
