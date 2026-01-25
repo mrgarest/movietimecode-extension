@@ -2,6 +2,8 @@
 
 namespace App\Cache;
 
+use App\Enums\RefreshMovieDataType;
+
 class MovieCacheKey
 {
     private const ROT = 'movie.';
@@ -39,5 +41,10 @@ class MovieCacheKey
     public static function latestWithTimecodes(int $page, int $limit = 20, string $langCode): string
     {
         return  self::ROT . 'latest.checked.' . $page . '.' . $limit . '.' . $langCode;
+    }
+
+    public static function refreshData(int $movieId, RefreshMovieDataType $type): string
+    {
+        return self::ROT . 'refresh_data.' . $movieId . '.' . $type->value;
     }
 }

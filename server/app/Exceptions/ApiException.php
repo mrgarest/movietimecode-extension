@@ -101,6 +101,19 @@ class ApiException extends Exception
         );
     }
 
+     /**
+     * Duplicate - 409
+     */
+    public static function duplicate(?array $details = null): self
+    {
+        return new static(
+            code: 'DUPLICATE_ENTRY',
+            status: Response::HTTP_CONFLICT,
+            message: 'The requested operation conflicts with an existing record',
+            details: $details
+        );
+    }
+
     /**
      * Too many requests - 429
      */
@@ -166,7 +179,7 @@ class ApiException extends Exception
     */
 
     /**
-     * The user does not have the required permission to access this resource - 401
+     * The user does not have the required permission to access this resource - 403
      */
     public static function permissionDenied(?array $details = null): self
     {

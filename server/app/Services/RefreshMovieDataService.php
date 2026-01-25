@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Cache\MovieCacheKey;
 use App\Enums\MovieCompanyRole;
 use App\Enums\MovieExternalId as EnumsMovieExternalId;
 use App\Enums\RefreshMovieDataType;
@@ -12,6 +13,7 @@ use App\Models\MovieExternalId;
 use App\Services\IMDB\ImdbService;
 use App\Services\IMDB\ImdbParserService;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\Cache;
 
 class RefreshMovieDataService
 {
@@ -24,10 +26,15 @@ class RefreshMovieDataService
      * @param int $movieId
      * @param RefreshMovieDataType[] $types
      */
-    public static function dispatch(int $movieId, array $types = [RefreshMovieDataType::IMDB_INFO]): void
+    public static function dispatch(int $movieId, array $types = []): void
     {
         foreach ($types as $type) {
-            RefreshMovieDataJob::dispatch($movieId, $type)->delay(Carbon::now()->addSeconds(mt_rand(5, 240)));
+            $key = MovieCacheKey::refreshData($movieId, $type);
+            if (Cache::has($key)) continue;
+            $time = Carbon::now()->addSeconds(mt_rand(5, 240));
+            
+            RefreshMovieDataJob::dispatch($movieId, $type)->delay($time);
+            Cache::put($key, true, $time->addMinutes(10));
         }
     }
 

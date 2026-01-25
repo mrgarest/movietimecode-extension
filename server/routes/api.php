@@ -5,12 +5,11 @@ use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\DashboardController;
 use App\Http\Controllers\Api\EventController;
 use App\Http\Controllers\Api\MovieController;
+use App\Http\Controllers\Api\MovieSanctionController;
 use App\Http\Controllers\Api\TimecodeController;
 use App\Http\Controllers\Api\TwitchController;
 use App\Http\Controllers\Api\UserController;
 use App\Http\Middleware\AuthApiMiddleware;
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Route;
 
 // old
@@ -46,10 +45,16 @@ Route::prefix('v1')->group(function () {
 
 Route::prefix('dashboard')
     ->middleware(['auth:api', 'not_deactivated', 'scopes:server', 'check_role:' . RoleId::ADMIN->value])
-    ->controller(DashboardController::class)
     ->group(function () {
-        Route::get('/statistics', 'statistics');
-        Route::get('/timecodes', 'timecodes');
+        Route::controller(DashboardController::class)->group(function () {
+            Route::get('/statistics', 'statistics');
+            Route::get('/timecodes', 'timecodes');
+        });
+
+        Route::prefix('/movies/sanctions/{id}')->controller(MovieSanctionController::class)->group(function () {
+            Route::post('/', 'approve');
+            Route::delete('/', 'delete');
+        });
     });
 
 Route::prefix('movies')->controller(MovieController::class)->group(function () {
@@ -81,6 +86,8 @@ Route::prefix('v2')->group(function () {
             Route::get('/search', 'search');
             Route::get('/timecodes/search', 'searchTimecodes');
         });
+
+        Route::post('/sanctions', [MovieSanctionController::class, 'report']);
 
         Route::prefix('{movieId}')->group(function () {
             Route::controller(MovieController::class)->group(function () {

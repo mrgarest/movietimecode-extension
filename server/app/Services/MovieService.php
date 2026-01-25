@@ -10,6 +10,7 @@ use App\DTO\Movie\MovieCheckRecommendationData;
 use App\Enums\EventType;
 use App\Enums\MovieCompanyRole;
 use App\Enums\MovieExternalId as EnumsMovieExternalId;
+use App\Enums\RefreshMovieDataType;
 use App\Enums\StorageId;
 use App\Exceptions\ApiException;
 use App\Helpers\MovieHelper;
@@ -274,6 +275,11 @@ class MovieService
 
         // Asynchronous addition of localized images to a movie
         AddImagesToMovie::dispatch($movie->id, $movieDetails['imdb_id'])->delay(Carbon::now()->addSeconds(mt_rand(2, 120)));
+
+        // Time lock for updating data if it is missing
+        foreach ([RefreshMovieDataType::IMDB_INFO, RefreshMovieDataType::IMDB_CONTENT_RATINGS] as $type) {
+            Cache::put(MovieCacheKey::refreshData($movie->id, $type), true, Carbon::now()->addMinute(20));
+        }
 
         return $movie;
     }
