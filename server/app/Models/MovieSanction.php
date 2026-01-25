@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Enums\SanctionReason;
 use App\Enums\SanctionType;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Builder;
@@ -13,6 +14,7 @@ class MovieSanction extends Model
         'device_token',
         'username',
         'type',
+        'reason',
         'comment',
         'file_name',
         'occurred_at',
@@ -27,6 +29,7 @@ class MovieSanction extends Model
         'device_token' => 'string',
         'username' => 'string',
         'type' => SanctionType::class,
+        'reason' => SanctionReason::class,
         'comment' => 'string',
         'file_name' => 'string',
         'occurred_at' => 'datetime',
