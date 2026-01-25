@@ -16,7 +16,6 @@ use Carbon\Carbon;
 class RefreshMovieDataService
 {
     public function __construct(
-        protected MovieService $movieService,
         protected ImdbParserService $imdbParserService
     ) {}
 
