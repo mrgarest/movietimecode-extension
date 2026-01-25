@@ -28,7 +28,7 @@ class AppServiceProvider extends ServiceProvider
         RateLimiter::for('api', function (Request $request) {
             return Limit::perMinute(60, 15)->by($request->ip())->response(function (Request $request, array $headers) {
                 throw ApiException::tooManyRequests();
-            });;
+            });
         });
 
         Passport::tokensCan([
