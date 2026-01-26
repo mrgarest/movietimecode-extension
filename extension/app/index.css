@@ -110,6 +110,7 @@
 .description {
   @apply text-xs text-muted font-medium;
 }
+
 .text-h1 {
   @apply text-4xl font-bold;
 }
