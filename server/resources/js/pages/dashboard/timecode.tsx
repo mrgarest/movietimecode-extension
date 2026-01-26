@@ -162,9 +162,9 @@ export default function TimecodePage() {
                         <SelectValue placeholder="Select a fruit" />
                     </SelectTrigger>
                     <SelectContent>
-                        <SelectItem value='latest'>{i18n.t("latest")}</SelectItem>
-                        <SelectItem value='segments'>{i18n.t("segments")}</SelectItem>
-                        <SelectItem value='usage'>{i18n.t("usage")}</SelectItem>
+                        <SelectItem value='latest'>{t("latest")}</SelectItem>
+                        <SelectItem value='segments'>{t("segments")}</SelectItem>
+                        <SelectItem value='usage'>{t("usage")}</SelectItem>
                     </SelectContent>
                 </Select>
             </div>

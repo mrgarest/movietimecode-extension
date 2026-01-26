@@ -4,6 +4,7 @@ namespace App\Enums;
 
 enum SanctionReason: int
 {
-    case BANNED = 100;
-    case STRIKE = 101;
+    case OTHER = 100;
+    case COPYRIGHT = 101;
+    case SEXUAL_CONTENT = 102;
 }

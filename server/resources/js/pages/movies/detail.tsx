@@ -49,7 +49,7 @@ export default function MovieDetailPage() {
             <div className="w-full max-w-4xl mx-auto px-4">
                 <div className="flex flex-col md:flex-row gap-6">
                     <img
-                        className="max-md:hidden max-w-76 min-w-76 object-cover rounded-xl border border-border/50"
+                        className="max-md:hidden max-w-76 min-w-76 object-cover rounded-xl border border-border/50 bg-secondary"
                         src={movie.poster_url || "/images/not_found_poster.webp"}
                         alt={movie.title || "poster"}
                     />

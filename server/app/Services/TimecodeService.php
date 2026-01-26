@@ -362,9 +362,7 @@ class TimecodeService
                 return $query->withTrashed();
             })
             ->with([
-                'user' => function ($query) {
-                    $query->select('id', 'username');
-                },
+                'user:id,username',
                 'movie' => function ($query) use ($langCode) {
                     $query->with(['translations' => function ($q) use ($langCode) {
                         $q->where('lang_code', $langCode);

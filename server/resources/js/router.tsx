@@ -10,6 +10,8 @@ import LogoutPage from "./pages/logout";
 import TimecodePage from "./pages/dashboard/timecode";
 import MovieDetailPage from "./pages/movies/detail";
 import MovieWithTimecodesPage from "./pages/movies/with-timecodes";
+import MovieSanctionPage from "./pages/dashboard/movies/sanctions";
+import MovieSanctionAddPage from "./pages/dashboard/movies/sanctions/add";
 
 const router = createBrowserRouter([
     {
@@ -38,6 +40,13 @@ const router = createBrowserRouter([
                 children: [
                     { index: true, element: <DashboardPage /> },
                     { path: 'timecodes', element: <TimecodePage /> },
+                    {
+                        path: "movies",
+                        children: [
+                            { path: "sanctions", element: <MovieSanctionPage /> },
+                            { path: "sanctions/add", element: <MovieSanctionAddPage /> },
+                        ]
+                    },
                 ],
             },
         ],

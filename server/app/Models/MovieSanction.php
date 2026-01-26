@@ -48,6 +48,16 @@ class MovieSanction extends Model
         });
     }
 
+    public function approvedUser()
+    {
+        return $this->belongsTo(User::class, 'approved_by');
+    }
+
+    public function movie()
+    {
+        return $this->belongsTo(Movie::class, 'movie_id');
+    }
+
     public function scopeMovieId(Builder $query, int $id): Builder
     {
         return $query->where('movie_id', $id);
@@ -56,5 +66,10 @@ class MovieSanction extends Model
     public function scopeUsername(Builder $query, string $username): Builder
     {
         return $query->where('username', $username);
+    }
+
+    public function scopeDeviceToken(Builder $query, string $deviceToken): Builder
+    {
+        return $query->where('device_token', $deviceToken);
     }
 }

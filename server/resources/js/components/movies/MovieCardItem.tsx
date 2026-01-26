@@ -18,7 +18,7 @@ export default function MovieCardItem({ className = undefined, isLoading = false
                     <img
                         src={movie.poster_url || "/images/not_found_poster.webp"}
                         alt={movie.title}
-                        className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-110"
+                        className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-110 bg-accent"
                     />
                     {movie.release_year && <div className="absolute top-2 right-2 bg-black/60 backdrop-blur-md px-2 py-1 rounded text-[10px] font-bold text-white">
                         {movie.release_year}

@@ -30,11 +30,12 @@ export const fetchApi = async <T>(
     },
 ): Promise<T> => {
     const isGet = options.method === "GET";
+    const isFormData = options.body instanceof FormData;
     let queryString = "";
 
     if (isGet && options.body && typeof options.body === "object") {
         const params = Object.fromEntries(
-            Object.entries(options?.body)
+            Object.entries(options?.body as Record<string, any>)
                 .filter(([_, value]) => value != null)
                 .map(([key, value]) => [key, String(value)]),
         );
@@ -43,28 +44,38 @@ export const fetchApi = async <T>(
         queryString = searchParams ? `?${searchParams}` : "";
     }
 
-    options.headers = {
+    const headers: Record<string, string> = {
         Accept: "application/json",
-        "Content-Type": "application/json",
         ...options.headers,
     };
+
+    if (!isGet && !isFormData) {
+        headers["Content-Type"] = "application/json";
+    }
 
     const accessToken = Cookies.get("uat");
 
     if (accessToken) {
-        options.headers["Authorization"] = `Bearer ${accessToken}`;
+        headers["Authorization"] = `Bearer ${accessToken}`;
     }
 
     const xsrfToken = Cookies.get("XSRF-TOKEN");
     if (xsrfToken && !isGet) {
-        options.headers["X-XSRF-TOKEN"] = decodeURIComponent(xsrfToken);
+        headers["X-XSRF-TOKEN"] = decodeURIComponent(xsrfToken);
+    }
+
+    let requestBody: BodyInit | undefined = undefined;
+    if (!isGet && options.body) {
+        requestBody = isFormData
+            ? (options.body as FormData)
+            : JSON.stringify(options.body);
     }
 
     const response = await fetch(`${url}${queryString}`, {
         method: options.method,
         credentials: "include",
-        headers: options.headers,
-        body: !isGet && options.body ? JSON.stringify(options.body) : undefined,
+        headers: headers,
+        body: requestBody,
     });
 
     const data = await response.json().catch(() => null);

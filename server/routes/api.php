@@ -51,9 +51,12 @@ Route::prefix('dashboard')
             Route::get('/timecodes', 'timecodes');
         });
 
-        Route::prefix('/movies/sanctions/{id}')->controller(MovieSanctionController::class)->group(function () {
-            Route::post('/', 'approve');
-            Route::delete('/', 'delete');
+        Route::prefix('/movies/sanctions')->controller(MovieSanctionController::class)->group(function () {
+            Route::get('/', 'list');
+            Route::prefix('{id}')->group(function () {
+                Route::post('/', 'approve');
+                Route::delete('/', 'delete');
+            });
         });
     });
 

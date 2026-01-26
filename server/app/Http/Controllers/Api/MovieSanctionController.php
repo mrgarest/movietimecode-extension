@@ -6,11 +6,13 @@ use App\Enums\SanctionReason;
 use App\Enums\SanctionType;
 use App\Exceptions\ApiException;
 use App\Http\Controllers\Controller;
+use App\Http\Resources\Movie\MovieSanctionResource;
 use App\Http\Resources\SuccessResource;
 use App\Models\MovieSanction;
 use App\Services\MovieSanctionService;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\Rules\Enum;
 
 class MovieSanctionController extends Controller
@@ -30,27 +32,30 @@ class MovieSanctionController extends Controller
 
             'type' => ['required', new Enum(SanctionType::class)],
             'reason' => ['nullable', new Enum(SanctionReason::class)],
-            
+
             'comment' => 'nullable|string|min:2|max:256',
             'image' => 'nullable|file|max:5120',
             'occurred_at' => 'nullable|date',
         ]);
 
         $model = $this->sanctionService->report(
-            movieId: $validated['movie_id'] ?? null,
-            tmdbId: $validated['tmdb_id'] ?? null,
+            movieId: !empty($validated['movie_id']) ? (int) $validated['movie_id'] : null,
+            tmdbId: !empty($validated['tmdb_id']) ? (int) $validated['tmdb_id'] : null,
             deviceToken: $validated['device_token'],
             username: $validated['username'],
-            type: $validated['type'],
-            reason: $validated['reason'],
+            type: SanctionType::from((int) $validated['type']),
+            reason: !empty($validated['reason']) ? SanctionReason::tryFrom((int) $validated['reason']) : null,
             comment: $validated['comment'] ?? null,
             file: $request->file('image'),
-            occurredAt: isset($validated['occurred_at']) ? Carbon::parse($validated['occurred_at']) : null
+            occurredAt: !empty($validated['occurred_at']) ? Carbon::parse($validated['occurred_at']) : null
         );
 
-        // If the report is made by the admin, approve it immediately
-        $user = $request->user();
-        if ($user && $user->isAdmin()) $this->sanctionService->approve(
+        /**
+         * If the report is made by the admin, approve it immediately
+         * @var \App\Models\User|null $user
+         */
+        $user = Auth::guard('api')->user();
+        if ($user && $user->isAdmin() && !is_null($user->deactivated_at)) $this->sanctionService->approve(
             user: $user,
             sanction: $model
         );
@@ -61,7 +66,7 @@ class MovieSanctionController extends Controller
     public function approve(Request $request, $id)
     {
         $sanction = MovieSanction::find($id);
-        if(!$sanction) throw ApiException::notFound();
+        if (!$sanction) throw ApiException::notFound();
 
         $this->sanctionService->approve(
             user: $request->user(),
@@ -69,5 +74,28 @@ class MovieSanctionController extends Controller
         );
 
         return new SuccessResource(null);
+    }
+
+    public function delete($id)
+    {
+        MovieSanction::find($id)->delete();
+
+        return new SuccessResource(null);
+    }
+
+    public function list(Request $request)
+    {
+        $validated = $request->validate([
+            'page' => 'nullable|numeric',
+            'filter' => 'nullable|string',
+        ]);
+
+        return new SuccessResource([
+            'sanctions' => MovieSanctionResource::collection($this->sanctionService->getLatestPaginated(
+                page: $validated['page'] ?? 1,
+                langCode: 'uk',
+                filter: $validated['filter'] ?? 'unapproved'
+            )),
+        ]);
     }
 }

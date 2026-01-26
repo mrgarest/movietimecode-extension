@@ -1,7 +1,7 @@
 import { cn } from "@/lib/utils";
 import { Link, useLocation } from "react-router-dom";
 import { useTranslation } from 'react-i18next';
-import { ClockFading, Home, LogOut } from "lucide-react";
+import { ClockFading, Home, LogOut, VideoOff } from "lucide-react";
 import FloatingHamburger from "../FloatingHamburger";
 import { useMobileMenu } from "@/hooks/useMobileMenu";
 
@@ -20,6 +20,11 @@ export default function SideNavbar() {
             ico: ClockFading,
             to: '/dashboard/timecodes',
             text: t('timecodes')
+        },
+        {
+            ico: VideoOff,
+            to: '/dashboard/movies/sanctions',
+            text: t('sanctions')
         },
         {
             ico: LogOut,
@@ -49,7 +54,9 @@ export default function SideNavbar() {
                     ))}
                 </div>
             </div>
-            {isOpen && <div className={cn("duration-300 fixed top-0 right-0 left-0 bottom-0 bg-black/50 backdrop-blur-xs z-20", !isVisible && 'opacity-0')} />}
+            {isOpen && <div
+                onClick={() => toggleMenu()}
+                className={cn("duration-300 fixed top-0 right-0 left-0 bottom-0 bg-black/50 backdrop-blur-xs z-20", !isVisible && 'opacity-0')} />}
             <FloatingHamburger hidden="md" isOpen={isOpen} onToggle={() => toggleMenu()} />
         </>
     );
