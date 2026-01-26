@@ -97,7 +97,7 @@ export default function MovieDetailPage() {
                             <div className="space-y-1.5">
                                 <div className="text-lg font-bold">{t('recommendation')}</div>
                                 <div className={cn("text-sm",
-                                    movie.recommendation.color == 'red' && "text-red-500",
+                                    movie.recommendation.color == 'red' && "text-destructive",
                                     movie.recommendation.color == 'yellow' && "text-yellow-500",
                                 )}>{movie.recommendation.message}</div>
                             </div>
