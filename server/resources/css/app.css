@@ -3,6 +3,7 @@
 @theme {
     --font-sans: "Inter", sans-serif;
     --font-roboto: "Roboto", sans-serif;
+    --font-nunito: "Nunito", sans-serif;
     --color-background: var(--background);
     --color-foreground: var(--foreground);
     --color-sidebar-ring: var(--sidebar-ring);

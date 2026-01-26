@@ -33,14 +33,14 @@ export default function HeaderNavbar() {
     return (
         <>
             <header className="sm:my-6 flex items-center justify-center static sm:sticky top-4 left-0 right-0 sm:z-20 px-4">
-                <Link to='/' className={cn("flex items-center mb-4 gap-2",
+                <Link to='/' className={cn("flex items-center mb-4 gap-2.5",
                     pathname == '/' && "hidden"
                 )}>
                     <div className="sm:hidden size-7 relative select-none">
                         <img src="/images/icon.gif" className="size-full rounded-full absolute z-1" />
                         <div className="size-5 bg-[#598e3f] blur-md rounded-full absolute z-0 -left-0.5 -bottom-0.5 opacity-45" />
                     </div>
-                    <div className="sm:hidden text-xl font-semibold text-shadow-md/40 text-shadow-white/30">Movie Timecode</div>
+                    <div className="sm:hidden text-2xl font-nunito font-extrabold text-shadow-md/40 text-shadow-white/30">Movie Timecode</div>
                 </Link>
 
                 <nav className="bg-[#2e2f33] rounded-full h-11 px-1 hidden sm:flex items-center justify-center border-border border gap-1 shadow-md shadow-black/30">{navItems.map((item, index) => <Linker

@@ -33,7 +33,7 @@ export default function HomePage() {
                 <img src="/images/icon.gif" className="size-full rounded-full absolute z-1" />
                 <div className="size-18 bg-[#598e3f] blur-xl rounded-full absolute z-0 -left-1 -bottom-2 opacity-45" />
             </div>
-            <h1 className="text-5xl min-[370px]:text-6xl min-[420px]:text-7xl text-center font-semibold mt-6 mb-3 text-shadow-lg/40  text-shadow-white/30 flex flex-col sm:flex-row sm:gap-4"><span>Movie</span><span>Timecode</span></h1>
+            <h1 className="text-5xl min-[370px]:text-6xl min-[420px]:text-7xl text-center font-nunito font-extrabold mt-6 mb-3 text-shadow-lg/40  text-shadow-white/30 flex flex-col sm:flex-row sm:gap-4"><span>Movie</span><span>Timecode</span></h1>
             <p className="max-w-lg mx-auto text-center text-xs sm:text-sm font-normal text-white/70 text-shadow-lg/20  text-shadow-white/20">{t('homePage.description')}</p>
             <MovieSearch
                 inputSize="lg"
