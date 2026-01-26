@@ -82,9 +82,9 @@ export const fetchApi = async <T>(
 
     if (!response.ok) {
         throw new ApiError(
-            data?.erorr?.message ?? "Response not ok",
+            data?.error?.message ?? "Response not ok",
             response.status,
-            data.erorr as ServerResponseError,
+            data?.error as ServerResponseError,
         );
     }
 

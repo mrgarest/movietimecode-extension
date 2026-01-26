@@ -6,6 +6,7 @@ import router from './router';
 import { useUserStore } from './store/useUserStore';
 import { useEffect } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { Toaster } from 'react-hot-toast';
 
 function App() {
     const checkAuth = useUserStore(state => state.checkAuth);
@@ -23,7 +24,13 @@ function App() {
         checkAuth();
     }, []);
 
-    return <QueryClientProvider client={queryClient}><RouterProvider router={router} /></QueryClientProvider>;
+    return <QueryClientProvider client={queryClient}>
+        <RouterProvider router={router} />
+        <Toaster
+            position="top-right"
+            reverseOrder={true}
+        />
+    </QueryClientProvider>;
 }
 
 

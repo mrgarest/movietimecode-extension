@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { SanctionReason, SanctionType } from "@/enums/sanction";
 import { DatePicker } from "../ui/date-picker";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { MovieSearchItem } from "@/interfaces/movie";
 import { ApiError, fetchApi } from "@/utils/fetch";
 import MovieSearch from "./MovieSearch";
@@ -19,6 +19,7 @@ import { ErrorCode } from "@/enums/error-code";
 import { useUserStore } from "@/store/useUserStore";
 import { getDeviceToken } from "@/utils/cookies";
 import { DateTime } from "luxon";
+import toast from "react-hot-toast";
 
 interface RootProps {
     onSuccess: () => void;
@@ -119,6 +120,12 @@ export default function MovieSanctionAddForm({ onSuccess, onLoading }: RootProps
                     case ErrorCode.PERMISSION_DENIED:
                     case ErrorCode.USER_DEACTIVATED:
                         logout();
+                        break;
+                    case ErrorCode.NOT_FOUND:
+                        toast.error(t("movieNotFound"));
+                        break;
+                    case ErrorCode.DUPLICATE_ENTRY:
+                        toast.error(t("haveAlreadyReceivedReportAboutUser"), {duration: 5000});
                         break;
                 }
             }
