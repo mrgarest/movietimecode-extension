@@ -72,4 +72,9 @@ class MovieSanction extends Model
     {
         return $query->where('device_token', $deviceToken);
     }
+    
+    public function scopeApproved(Builder $query): Builder
+    {
+        return $query->whereNotNull('approved_at');
+    }
 }

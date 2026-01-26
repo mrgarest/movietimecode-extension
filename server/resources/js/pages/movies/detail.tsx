@@ -82,6 +82,14 @@ export default function MovieDetailPage() {
                             </div>
                             <MovieCompany text={t("production")} companies={movie.productions} />
                             <MovieCompany text={t("distributors")} companies={movie.distributors} />
+                            {movie.ban_count != null && movie.ban_count > 0 && <>
+                                <div>{t('banCount')}</div>
+                                <div className="text-destructive font-medium">{movie.ban_count}</div>
+                            </>}
+                            {movie.sіtrike_count != null && movie.sіtrike_count > 0 && <>
+                                <div>{t('sіtrikeCount')}</div>
+                                <div className="text-destructive font-medium">{movie.sіtrike_count}</div>
+                            </>}
                         </div>
 
                         {movie.recommendation && <>

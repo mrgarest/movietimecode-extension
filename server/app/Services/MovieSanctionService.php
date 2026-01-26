@@ -2,6 +2,8 @@
 
 namespace App\Services;
 
+use App\Cache\MovieSanctionCacheKey;
+use App\DTO\Movie\MovieSanctionCountData;
 use App\Enums\SanctionReason;
 use App\Enums\SanctionType;
 use App\Exceptions\ApiException;
@@ -11,11 +13,39 @@ use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
 class MovieSanctionService
 {
+    /**
+     * Get the count of bans/strikes.
+     * 
+     * @param int $movieId
+     * @return MovieSanctionCountData
+     */
+    public function getCounts(int $movieId): MovieSanctionCountData
+    {
+        return MovieSanctionCountData::fromArray(Cache::remember(MovieSanctionCacheKey::counts($movieId), Carbon::now()->addMinutes(5), function () use ($movieId) {
+            $targetTypes = [
+                SanctionType::BANNED->value,
+                SanctionType::STRIKE->value
+            ];
+            $results = MovieSanction::movieId($movieId)
+                ->approved()
+                ->whereIn('type', $targetTypes)
+                ->select('type', DB::raw('count(*) as count'))
+                ->groupBy('type')
+                ->pluck('count', 'type');
+
+            return (new MovieSanctionCountData(
+                bans: $results[$targetTypes[0]] ?? 0,
+                strikes: $results[$targetTypes[1]] ?? 0,
+            ))->toArray();
+        }));
+    }
+
     /**
      * Creates a movie sanction report for the specified user.
      *

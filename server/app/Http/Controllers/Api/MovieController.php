@@ -16,6 +16,7 @@ use App\Http\Resources\SuccessResource;
 use App\Models\Movie;
 use App\Services\CompanyService;
 use App\Services\IMDB\ImdbService;
+use App\Services\MovieSanctionService;
 use App\Services\MovieService;
 use App\Services\RefreshMovieDataService;
 use Illuminate\Http\Request;
@@ -78,6 +79,7 @@ class MovieController extends Controller
         Request $request,
         int $movieId,
         MovieService $movieService,
+        MovieSanctionService $sanctionService,
         CompanyService $companyService,
         ImdbService $imdbService
     ) {
@@ -88,6 +90,9 @@ class MovieController extends Controller
         );
 
         if (!$movie) throw ApiException::notFound();
+
+        // Get the count of bans/strikes
+        $sanctionCounts = $sanctionService->getCounts($movie->id);
 
         // Get companies for the movie
         $companies = $companyService->getForMovie($movie);
@@ -102,6 +107,7 @@ class MovieController extends Controller
             movie: $movie,
             productions: $productions,
             distributors: $distributors,
+            sanctionCounts: $sanctionCounts
         );
 
         // Starts updating data if it is missing
@@ -115,6 +121,7 @@ class MovieController extends Controller
             'movie' => $movie,
             'productions' => $productions,
             'distributors' => $distributors,
+            'sanctionCounts' => $sanctionCounts,
             'imdb' => [
                 'id' => $imdbService->getImdbId($movie),
                 'content_ratings' => $contentRatings
@@ -130,6 +137,7 @@ class MovieController extends Controller
         Request $request,
         int $movieId,
         MovieService $movieService,
+        MovieSanctionService $sanctionService,
         CompanyService $companyService,
         ImdbService $imdbService
     ) {
@@ -142,6 +150,9 @@ class MovieController extends Controller
         if (!$movie) throw ApiException::notFound();
 
         $translation = $movieService->getTranslation($movie);
+
+        // Get the count of bans/strikes
+        $sanctionCounts = $sanctionService->getCounts($movie->id);
 
         // Get companies for the movie
         $companies = $companyService->getForMovie($movie);
@@ -156,6 +167,7 @@ class MovieController extends Controller
             movie: $movie,
             productions: $productions,
             distributors: $distributors,
+            sanctionCounts: $sanctionCounts
         );
 
         // Starts updating data if it is missing
@@ -170,6 +182,7 @@ class MovieController extends Controller
             'translation' => $translation,
             'productions' => $productions,
             'distributors' => $distributors,
+            'sanctionCounts' => $sanctionCounts,
             'imdb' => [
                 'id' => $imdbService->getImdbId($movie),
                 'content_ratings' => $contentRatings

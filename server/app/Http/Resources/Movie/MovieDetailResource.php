@@ -32,14 +32,16 @@ class MovieDetailResource extends SuccessResource
             ] : null,
             'productions' => $this->formatCompanies($this->resource['productions']),
             'distributors' => $this->formatCompanies($this->resource['distributors']),
-            'imdb' => $this->resource['imdb']['id'] != null ? [
-                'id' => $this->resource['imdb']['id'],
-                'content_ratings' => $this->formatContentRatings(),
-            ] : null,
+            'ban_count' => $this->resource['sanctionCounts']->bans,
+            'sіtrike_count' => $this->resource['sanctionCounts']->strikes,
             'recommendation' => $this->when($recommendation, [
                 'color' => $recommendation->color,
                 'message' => $recommendation->message
             ]),
+            'imdb' => $this->resource['imdb']['id'] != null ? [
+                'id' => $this->resource['imdb']['id'],
+                'content_ratings' => $this->formatContentRatings(),
+            ] : null,
             'poster_url' => TmdbClient::getImageUrl('w500', $translation->poster_path ?? $movie->poster_path),
             'backdrop_url' => TmdbClient::getImageUrl('w500',$translation->backdrop_path ?? $movie->backdrop_path)
         ];

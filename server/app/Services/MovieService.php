@@ -7,6 +7,7 @@ use App\Clients\TmdbClient;
 use App\DTO\Movie\MoviePreviewData;
 use App\DTO\Movie\MovieSearchData;
 use App\DTO\Movie\MovieCheckRecommendationData;
+use App\DTO\Movie\MovieSanctionCountData;
 use App\Enums\EventType;
 use App\Enums\MovieCompanyRole;
 use App\Enums\MovieExternalId as EnumsMovieExternalId;
@@ -354,8 +355,13 @@ class MovieService
      * @param string $langCode
      * @return MovieCheckRecommendationData
      */
-    public function checkRecommendation(Movie $movie, Collection $productions, Collection $distributors, string $langCode = 'uk'): MovieCheckRecommendationData
-    {
+    public function checkRecommendation(
+        Movie $movie,
+        Collection $productions,
+        Collection $distributors,
+        MovieSanctionCountData $sanctionCounts,
+        string $langCode = 'uk'
+    ): MovieCheckRecommendationData {
         // Checking the age of a movie
         $isNew = $movie->release_date->gt(Carbon::now()->subYears(4));
 
@@ -370,6 +376,13 @@ class MovieService
         if ($prodHazard > 0) return MovieCheckRecommendationData::fromLang(
             color: 'red',
             key: $isNew ? 'productionYear' : 'production',
+            langCode: $langCode
+        );
+
+        // Checking for bans and sanctions
+        if ($sanctionCounts->bans > 0 || $sanctionCounts->strikes > 0) return MovieCheckRecommendationData::fromLang(
+            color: 'red',
+            key: 'sanction',
             langCode: $langCode
         );
 
