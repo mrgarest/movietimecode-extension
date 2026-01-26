@@ -46,7 +46,7 @@ interface Reports {
     type: number;
     reason: number | null;
     comment: string | null;
-    occurred_at: number | null;
+    occurred_at: string | null;
     created_at: number;
 }
 
@@ -253,7 +253,7 @@ export default function MovieSanctionPage() {
                     <div
                         key={`${pageIndex}-${index}`}
                         className={cn("grid grid-cols-[auto_1fr_auto] items-center gap-4 py-4",
-                            pageIndex > 0 && index > 0 && "border-t border-border"
+                            (index !== 0 || pageIndex !== 0) && "border-t border-border"
                         )}>
                         <img
                             className="w-20 pointer-events-none rounded-md"
@@ -285,6 +285,13 @@ export default function MovieSanctionPage() {
                                 </> : <>
                                     <div>{t('lastReport')}</div>
                                     <div>{formatDate(item.last_report_at)}</div>
+                                </>}
+
+                                {item.reports[0].occurred_at && <>
+                                    <div>{t('sanction')}</div>
+                                    <div>{DateTime.fromISO(item.reports[0].occurred_at as unknown as string)
+                                        .setLocale(i18n.language)
+                                        .toLocaleString(DateTime.DATE_SHORT)}</div>
                                 </>}
                             </div>
                         </div>
@@ -327,7 +334,9 @@ export default function MovieSanctionPage() {
 
                                     {item.occurred_at && <>
                                         <div>{t('sanction')}</div>
-                                        <div>{formatDate(item.occurred_at)}</div>
+                                        <div>{DateTime.fromISO(item.occurred_at as unknown as string)
+                                            .setLocale(i18n.language)
+                                            .toLocaleString(DateTime.DATE_SHORT)}</div>
                                     </>}
                                     <div>{t('created')}</div>
                                     <div>{formatDate(item.created_at)}</div>

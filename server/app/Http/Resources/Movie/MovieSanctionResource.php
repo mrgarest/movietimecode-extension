@@ -30,7 +30,7 @@ class MovieSanctionResource extends JsonResource
                 'type' => $report->type,
                 'reason' => $report->reason,
                 'comment' => $report->comment,
-                'occurred_at' => $report->occurred_at->timestamp,
+                'occurred_at' => $report->occurred_at->format('Y-m-d'),
                 'created_at' => $report->created_at->timestamp
             ]),
             'movie' => [

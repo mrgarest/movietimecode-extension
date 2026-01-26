@@ -22,14 +22,26 @@ export function DatePicker({ value, onChange, placeholder, maxDate, minDate }: D
         return typeof value === "string" ? new Date(value) : value;
     }, [value]);
 
+    const handleSelect = (selectedDate: Date | undefined) => {
+        if (selectedDate) {
+            const normalizedDate = new Date(selectedDate);
+            normalizedDate.setHours(0, 0, 0, 0);
+
+            if (onChange) {
+                onChange(normalizedDate);
+            }
+        } else {
+            if (onChange) onChange(undefined);
+        }
+    };
+
     return (
         <Popover>
             <PopoverTrigger asChild>
                 <Button
                     variant="outline"
                     data-empty={!value}
-                    className="data-[empty=true]:text-muted-foreground w-full justify-between text-left font-normal"
-                >
+                    className="data-[empty=true]:text-muted-foreground w-full justify-between text-left font-normal">
                     {dateValue && !isNaN(dateValue.getTime()) ? (
                         DateTime.fromJSDate(dateValue)
                             .setLocale(i18n.language)
@@ -43,14 +55,14 @@ export function DatePicker({ value, onChange, placeholder, maxDate, minDate }: D
             <PopoverContent className="w-auto p-0" align="start">
                 <Calendar
                     mode="single"
-                    selected={value}
-                    onSelect={onChange}
+                    selected={dateValue}
+                    onSelect={handleSelect}
                     defaultMonth={value}
                     disabled={(date) => {
                         const d = new Date(date);
                         d.setHours(0, 0, 0, 0);
 
-                        // 2. Check for future (maxDate)
+                        // Check for future (maxDate)
                         if (maxDate instanceof Date && !isNaN(maxDate.getTime())) {
                             const max = new Date(maxDate);
                             max.setHours(0, 0, 0, 0);

@@ -18,6 +18,7 @@ import { ServerResponse } from "@/interfaces/response";
 import { ErrorCode } from "@/enums/error-code";
 import { useUserStore } from "@/store/useUserStore";
 import { getDeviceToken } from "@/utils/cookies";
+import { DateTime } from "luxon";
 
 interface RootProps {
     onSuccess: () => void;
@@ -47,7 +48,8 @@ export default function MovieSanctionAddForm({ onSuccess, onLoading }: RootProps
         comment: z.string()
             .min(2, t("textMustBeLongerValue", { value: 2 }))
             .max(256, t("maximumLengthTextShouldNotExceedValue", { value: 256 }))
-            .optional().or(z.literal('')),
+            .optional()
+            .or(z.literal('')),
         occurred_at: z.string(t('selectDate')),
         image: z.any().optional(),
     });
@@ -66,8 +68,8 @@ export default function MovieSanctionAddForm({ onSuccess, onLoading }: RootProps
         defaultValues: {
             username: "",
             comment: "",
-            type: "1",
-            reason: "1"
+            type: "",
+            reason: ""
         },
     });
 
@@ -172,7 +174,7 @@ export default function MovieSanctionAddForm({ onSuccess, onLoading }: RootProps
                                     value={field.value ? new Date(field.value) : undefined}
                                     // minDate={minDate}
                                     maxDate={maxDate}
-                                    onChange={(date) => field.onChange(date?.toISOString())}
+                                    onChange={(date) => field.onChange(date ? DateTime.fromJSDate(date).toISODate() : undefined)}
                                 />
                             </FormControl>
                             <FormMessage />

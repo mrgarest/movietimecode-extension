@@ -38,7 +38,7 @@ class MovieSanctionController extends Controller
             'occurred_at' => 'nullable|date',
         ]);
 
-        $model = $this->sanctionService->report(
+        $this->sanctionService->report(
             movieId: !empty($validated['movie_id']) ? (int) $validated['movie_id'] : null,
             tmdbId: !empty($validated['tmdb_id']) ? (int) $validated['tmdb_id'] : null,
             deviceToken: $validated['device_token'],
@@ -47,17 +47,7 @@ class MovieSanctionController extends Controller
             reason: !empty($validated['reason']) ? SanctionReason::tryFrom((int) $validated['reason']) : null,
             comment: $validated['comment'] ?? null,
             file: $request->file('image'),
-            occurredAt: !empty($validated['occurred_at']) ? Carbon::parse($validated['occurred_at']) : null
-        );
-
-        /**
-         * If the report is made by the admin, approve it immediately
-         * @var \App\Models\User|null $user
-         */
-        $user = Auth::guard('api')->user();
-        if ($user && $user->isAdmin() && !is_null($user->deactivated_at)) $this->sanctionService->approve(
-            user: $user,
-            sanction: $model
+            occurredAt: !empty($validated['occurred_at']) ? Carbon::createFromFormat('Y-m-d', $validated['occurred_at'])->startOfDay() : null
         );
 
         return new SuccessResource(null);

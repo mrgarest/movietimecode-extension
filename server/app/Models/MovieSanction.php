@@ -32,7 +32,7 @@ class MovieSanction extends Model
         'reason' => SanctionReason::class,
         'comment' => 'string',
         'file_name' => 'string',
-        'occurred_at' => 'datetime',
+        'occurred_at' => 'date',
         'approved_at' => 'datetime',
         'approved_by' => 'int',
         'created_at' => 'datetime',
