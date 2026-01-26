@@ -13,7 +13,7 @@ use App\Http\Middleware\AuthApiMiddleware;
 use Illuminate\Support\Facades\Route;
 
 // old
-Route::prefix('v1')->group(function () {
+Route::prefix('v1')->middleware('throttle:api')->group(function () {
     Route::get('/auth', [AuthController::class, 'extension']);
 
     Route::prefix('twitch')->middleware(AuthApiMiddleware::class)->controller(TwitchController::class)->group(function () {
@@ -44,7 +44,7 @@ Route::prefix('v1')->group(function () {
 
 
 Route::prefix('dashboard')
-    ->middleware(['auth:api', 'not_deactivated', 'scopes:server', 'check_role:' . RoleId::ADMIN->value])
+    ->middleware(['throttle:api', 'auth:api', 'not_deactivated', 'scopes:server', 'check_role:' . RoleId::ADMIN->value])
     ->group(function () {
         Route::controller(DashboardController::class)->group(function () {
             Route::get('/statistics', 'statistics');
@@ -60,12 +60,12 @@ Route::prefix('dashboard')
         });
     });
 
-Route::prefix('movies')->controller(MovieController::class)->group(function () {
+Route::prefix('movies')->middleware('throttle:api')->controller(MovieController::class)->group(function () {
     Route::get('/latest', 'latest');
     Route::get('/timecodes', 'withTimecodes');
 });
 
-Route::prefix('v2')->group(function () {
+Route::prefix('v2')->middleware('throttle:api')->group(function () {
     Route::post('/auth/extension', [AuthController::class, 'extension']);
 
     Route::prefix('user')

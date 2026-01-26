@@ -21,10 +21,8 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware) {
-        $middleware->statefulApi();
         $middleware->trustProxies(at: '*');
         $middleware->encryptCookies(except: ['uat']);
-        $middleware->throttleApi('api');
         $middleware->alias([
             'not_deactivated' => CheckDeactivated::class,
             'scopes' => CheckScopes::class,
