@@ -40,12 +40,31 @@
 .mt-hidden {
   visibility: hidden;
 }
+
 .mt-hr {
   width: 100%;
   height: 1px;
   border: none;
   border-top: 1px solid var(--mt-border);
   background: transparent;
+}
+
+/*********************** text size ***********************/
+.mt-text-sm {
+  font-size: var(--mt-text-sm);
+}
+
+.mt-font-medium {
+  font-weight: 400;
+}
+/*********************** colors ***********************/
+
+.mt-text-destructive {
+  color: var(--mt-destructive);
+}
+
+.mt-text-yellow {
+  color: var(--mt-yellow);
 }
 
 /*********************** scrollbar ***********************/

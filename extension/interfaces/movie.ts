@@ -24,6 +24,12 @@ export interface MovieCheckResponse extends ServerResponse {
   } | null;
   productions: MovieCheckCompany[] | null;
   distributors: MovieCheckCompany[] | null;
+  ban_count: number | null;
+  sіtrike_count: number | null;
+  recommendation: {
+    color: string;
+    message: string;
+  } | null;
   imdb: {
     id: string;
     content_ratings: ImdbContentRating[] | null;

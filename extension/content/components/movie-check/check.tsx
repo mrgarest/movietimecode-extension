@@ -2,18 +2,18 @@ import { ImdbContentRating, MovieCheckResponse, MovieCheckCompany, MovieSearchIt
 import { useEffect, useState } from "preact/hooks";
 import config from "config";
 import { fetchBackground } from "@/utils/fetch";
-import { format, parseISO } from 'date-fns';
-import { uk } from 'date-fns/locale';
 import { ImdbContentRatingId } from "@/enums/imdb";
 import i18n from "@/lib/i18n";
 import { event } from "@/utils/event";
 import { EventType } from "@/enums/event";
+import { cn } from "@/lib/utils";
+import { DateTime } from "luxon"
 
 interface RootProps {
     movie: MovieSearchItem;
     onLoading: (b: boolean) => void;
     onError: (msg: string) => void;
-};
+}
 
 export default function Check({ movie, onLoading, onError }: RootProps) {
     const [isLoading, setIsLoading] = useState<boolean>(false);
@@ -65,15 +65,32 @@ export default function Check({ movie, onLoading, onError }: RootProps) {
             <div className="mt-check mt-scrollbar">
                 <div className="mt-info-grid">
                     <div>{i18n.t("releaseDate")}</div>
-                    <div {...(movieCheck.release?.hazard == true ? { style: { color: "var(--mt-destructive)" } } : {})}>
-                        {movieCheck.release ?
-                            format(parseISO(movieCheck.release.release_date), 'd MMMM yyyy', { locale: uk })
-                            : 'N/A'
-                        }
-                    </div>
+                    <div className={cn(movieCheck.release?.hazard == true && "mt-text-destructive")}>{movieCheck.release ?
+                        DateTime.fromISO(movieCheck.release.release_date)
+                            .setLocale(i18n.language)
+                            .toFormat('d MMMM yyyy')
+                        : 'N/A'
+                    }</div>
                     <MovieCompany text={i18n.t("production")} companies={movieCheck.productions} />
                     <MovieCompany text={i18n.t("distributors")} companies={movieCheck.distributors} />
+                    {movieCheck.ban_count != null && movieCheck.ban_count > 0 && <>
+                        <div>{i18n.t('banCount')}</div>
+                        <div className="mt-text-destructive mt-font-medium">{movieCheck.ban_count}</div>
+                    </>}
+                    {movieCheck.sіtrike_count != null && movieCheck.sіtrike_count > 0 && <>
+                        <div>{i18n.t('sіtrikeCount')}</div>
+                        <div className="mt-text-destructive mt-font-medium">{movieCheck.sіtrike_count}</div>
+                    </>}
                 </div>
+
+                {movieCheck.recommendation && <div className="mt-border-t">
+                    <div className="mt-info-title">{i18n.t('recommendation')}</div>
+                    <div className={cn("mt-text-sm mt-font-medium",
+                        movieCheck.recommendation.color == 'red' && "mt-text-destructive",
+                        movieCheck.recommendation.color == 'yellow' && "mt-text-yellow",
+                    )}>{movieCheck.recommendation.message}</div>
+                </div>}
+
                 {movieCheck.imdb?.content_ratings && <div className="mt-border-t">
                     <div className="mt-info-title">{i18n.t('imdbContentRating')}</div>
                     <div className="mt-info-grid">

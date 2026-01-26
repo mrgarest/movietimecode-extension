@@ -194,5 +194,8 @@
     "invalidFileFormat": "Неправильний формат файлу",
     "author": "Автор",
     "segments": "Сегменти",
-    "imdbContentRating": "Рейтинг контенту IMDB"
+    "imdbContentRating": "Рейтинг контенту IMDB",
+    "recommendation": "Рекомендація",
+    "banCount": "Кількість банів",
+    "sіtrikeCount": "Кількість страйків"
 }

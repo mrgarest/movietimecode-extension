@@ -7,7 +7,6 @@ import { renderQuestionDialog } from "../question-dialog";
 import Check from "./check";
 import i18n from "@/lib/i18n";
 import { LoadingSpinner } from "../ui/loading";
-import { is } from "date-fns/locale";
 
 interface RootProps {
     title: string;
