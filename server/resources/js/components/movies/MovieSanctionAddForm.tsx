@@ -125,7 +125,7 @@ export default function MovieSanctionAddForm({ onSuccess, onLoading }: RootProps
                         toast.error(t("movieNotFound"));
                         break;
                     case ErrorCode.DUPLICATE_ENTRY:
-                        toast.error(t("haveAlreadyReceivedReportAboutUser"), {duration: 5000});
+                        toast.error(t("haveAlreadyReceivedReportAboutUser"), { duration: 5000 });
                         break;
                 }
             }
@@ -152,7 +152,7 @@ export default function MovieSanctionAddForm({ onSuccess, onLoading }: RootProps
                             </div>
                             <X onClick={() => { setSelectedMovie(undefined) }}
                                 className="absolute right-2 top-1/2 -translate-y-1/2 size-7 p-1 text-muted-foreground z-2 cursor-pointer duration-300 hover:text-red-500" />
-                        </div> : <MovieSearch onSelected={handleMovieSelected} />}
+                        </div> : <MovieSearch withMovieId onSelected={handleMovieSelected} />}
                     </FormControl>
                     {selectedMovieError && <FormMessage>{t('youNeedSelectMovie')}</FormMessage>}
                 </FormItem>

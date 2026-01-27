@@ -12,13 +12,14 @@ import { Spinner } from "@/components/ui/spinner";
 import { Search, X } from "lucide-react";
 
 interface RootProps {
+    withMovieId?: boolean
     inputSize?: "default" | "lg"
     placeholder?: string,
     className?: string,
     onSelected: (movie: MovieSearchItem) => void,
 }
 
-export default function MovieSearch({ inputSize = "default", placeholder, className, onSelected }: RootProps) {
+export default function MovieSearch({ withMovieId = false, inputSize = "default", placeholder, className, onSelected }: RootProps) {
     const { t } = useTranslation();
     const [isOpen, setIsOpen] = useState<boolean>(false);
     const [query, setQuery] = useState<string>('');
@@ -30,7 +31,8 @@ export default function MovieSearch({ inputSize = "default", placeholder, classN
             method: 'GET',
             body: {
                 q: debouncedQuery,
-                limit: 20
+                limit: 20,
+                with: withMovieId ? "movieId" : undefined
             },
         }),
         enabled: debouncedQuery.length >= 2,
